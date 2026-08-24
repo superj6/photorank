@@ -76,7 +76,9 @@ class Dealer {
       for (final p in photos) p.id: priorityOf(p, now, _rng, w: config.weights),
     };
     final ranked = [...photos]..sort((a, b) => priority[b.id]!.compareTo(priority[a.id]!));
-    final byMu = [...photos]..sort((a, b) => b.mu.compareTo(a.mu));
+    // Top tier = best *rated* photos; an unrated library has no top yet.
+    final byMu = photos.where((p) => p.observations > 0).toList()
+      ..sort((a, b) => b.mu.compareTo(a.mu));
     final topTier = byMu.take(config.topTierSize).map((p) => p.id).toSet();
 
     final cards = <Card>[];

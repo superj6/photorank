@@ -37,6 +37,23 @@ flutter test                   # rating engine, dealer, sampler, repo tests
 flutter analyze
 ```
 
+## Run in the Android emulator
+
+An AVD (`photorank`, API 35, Pixel 7) and a fake camera roll are one command
+each — `tool/emulator.sh` wraps the details:
+
+```sh
+tool/emulator.sh create                       # once
+tool/emulator.sh start                        # boots and waits for the device
+python3 tool/make_seed_photos.py /tmp/seed    # 85 JPEGs with EXIF dates, bursts, trip days
+tool/emulator.sh seed /tmp/seed               # push to DCIM/Camera + media rescan
+tool/emulator.sh run                          # flutter run on the emulator
+```
+
+Note: Android's MediaProvider ignores EXIF `DateTimeOriginal` unless
+`OffsetTimeOriginal` is also present (or the date is within a day of the file
+mtime). The seed generator writes both; real camera JPEGs already do.
+
 ## Run on an Android phone
 
 1. Enable Developer options → USB debugging on the phone, plug it in, accept

@@ -114,7 +114,8 @@ class SessionController extends Notifier<SessionState> {
     }
     final ids = {for (final c in hand) ...c.photoIds};
     final rows = await photosRepo.byIds(ids);
-    final byMu = [...states]..sort((a, b) => b.mu.compareTo(a.mu));
+    final byMu = states.where((s) => s.observations > 0).toList()
+      ..sort((a, b) => b.mu.compareTo(a.mu));
     _topBefore = byMu.take(10).map((p) => p.id).toSet();
     _before = {for (final s in states) s.id: s.rating};
     final db = ref.read(dbProvider);
@@ -189,7 +190,8 @@ class SessionController extends Notifier<SessionState> {
     final ranking = ref.read(rankingRepoProvider);
     final db = ref.read(dbProvider);
     final states = await ranking.photoStates(_axis);
-    final byMu = [...states]..sort((a, b) => b.mu.compareTo(a.mu));
+    final byMu = states.where((s) => s.observations > 0).toList()
+      ..sort((a, b) => b.mu.compareTo(a.mu));
     final topNow = byMu.take(10).map((p) => p.id).toList();
     final touched = {
       for (var i = 0; i < state.hand.length; i++)

@@ -9,7 +9,7 @@ import 'package:photorank/core/rating/observation.dart';
 void main() {
   final now = DateTime(2026, 8, 24, 12);
 
-  List<PhotoState> library(int n, {double rd = 350, int seed = 1}) {
+  List<PhotoState> library(int n, {double rd = 350, int seed = 1, bool rated = true}) {
     final rng = Random(seed);
     return [
       for (var i = 0; i < n; i++)
@@ -19,6 +19,7 @@ void main() {
           takenAt: now.subtract(Duration(minutes: i * 5)),
           addedAt: now.subtract(const Duration(days: 30)),
           lastShownAt: i.isEven ? now.subtract(Duration(days: i % 40)) : null,
+          observations: rated ? 1 : 0,
         ),
     ];
   }
@@ -100,6 +101,14 @@ void main() {
       expect(cards.length, 20);
       expect(cards.every((c) => c.mode == GameMode.vibeCheck || c.mode == GameMode.rate),
           isTrue);
+    });
+
+    test('unrated library never deals Challenger and needs no top tier', () {
+      final photos = library(200, rated: false);
+      final cards = Dealer(rng: Random(4)).dealHand(photos,
+          config: const DealerConfig(), now: now);
+      expect(cards.length, 20);
+      expect(cards.any((c) => c.mode == GameMode.challenger), isFalse);
     });
 
     test('empty library deals nothing', () {
