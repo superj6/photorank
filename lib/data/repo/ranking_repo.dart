@@ -150,6 +150,7 @@ class RankingRepo {
       clusterId: p.clusterId,
       observations: r?.observations ?? 0,
       views: p.views,
+      mediaId: p.mediaId,
     );
   }
 

@@ -111,6 +111,29 @@ class PhotoRepo {
     });
   }
 
+  /// Passed cards still count as shown so they are not re-dealt at once.
+  Future<void> markShown(Iterable<int> ids, {DateTime? now}) =>
+      (db.update(db.photos)..where((p) => p.id.isIn(ids.toList())))
+          .write(PhotosCompanion(lastShownAt: Value(now ?? DateTime.now())));
+
+  /// Wins/losses involving [photoId] on [axisId], anchors included.
+  Future<(int wins, int losses)> record(int axisId, int photoId) async {
+    final rows = await (db.select(db.observations)
+          ..where((o) =>
+              o.axisId.equals(axisId) &
+              (o.subjectId.equals(photoId) | o.opponentId.equals(photoId))))
+        .get();
+    var wins = 0, losses = 0;
+    for (final r in rows) {
+      final asSubject = r.subjectId == photoId;
+      final won = asSubject ? r.outcome == 'win' : r.outcome == 'loss';
+      final lost = asSubject ? r.outcome == 'loss' : r.outcome == 'win';
+      if (won) wins++;
+      if (lost) losses++;
+    }
+    return (wins, losses);
+  }
+
   Future<String?> pref(String key) async {
     final row = await (db.select(db.prefs)..where((p) => p.key.equals(key))).getSingleOrNull();
     return row?.value;

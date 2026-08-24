@@ -70,10 +70,12 @@ class Dealer {
     final used = <int>{};
     final byId = {for (final p in photos) p.id: p};
 
-    // Priority-sorted pool; recomputed lazily via `used` filtering.
-    final ranked = [...photos]
-      ..sort((a, b) => priorityOf(b, now, _rng, w: config.weights)
-          .compareTo(priorityOf(a, now, _rng, w: config.weights)));
+    // Priority-sorted pool (priorities fixed once per hand so the sort is
+    // consistent despite the noise term); `used` filters as cards are built.
+    final priority = {
+      for (final p in photos) p.id: priorityOf(p, now, _rng, w: config.weights),
+    };
+    final ranked = [...photos]..sort((a, b) => priority[b.id]!.compareTo(priority[a.id]!));
     final byMu = [...photos]..sort((a, b) => b.mu.compareTo(a.mu));
     final topTier = byMu.take(config.topTierSize).map((p) => p.id).toSet();
 

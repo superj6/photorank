@@ -11,6 +11,7 @@ class PhotoState {
     this.clusterId,
     this.observations = 0,
     this.views = 0,
+    this.mediaId,
   });
 
   final int id;
@@ -21,6 +22,9 @@ class PhotoState {
   final int? clusterId;
   final int observations;
   final int views;
+
+  /// Device media id (photo_manager asset id); null in pure-core tests.
+  final String? mediaId;
 
   double get mu => rating.mu;
   double get rd => rating.rd;
@@ -36,5 +40,6 @@ class PhotoState {
         clusterId: clusterId,
         observations: observations,
         views: views ?? this.views,
+        mediaId: mediaId,
       );
 }
