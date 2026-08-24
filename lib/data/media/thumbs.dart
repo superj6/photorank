@@ -16,7 +16,12 @@ class ThumbCache {
       _entities[mediaId] = hit;
       return hit;
     }
-    final e = await AssetEntity.fromId(mediaId);
+    AssetEntity? e;
+    try {
+      e = await AssetEntity.fromId(mediaId);
+    } catch (_) {
+      return null; // no platform channel (tests) or asset gone
+    }
     if (e != null) {
       _entities[mediaId] = e;
       if (_entities.length > capacity) _entities.remove(_entities.keys.first);
