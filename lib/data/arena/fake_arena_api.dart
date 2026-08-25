@@ -34,11 +34,25 @@ class FakeArenaApi implements ArenaApi {
   List<_E> _pool(String? roomId) => _entries.where((e) => e.roomId == roomId && e.status == 'active').toList();
 
   @override
-  Future<MyEntry?> submit(Uint8List jpegBytes, {String? roomId}) async {
-    if (_entries.any((e) => e.userId == 'me' && e.roomId == roomId)) throw StateError('already submitted today');
+  Future<void> submit(Uint8List jpegBytes, {required DateTime takenAt, String? roomId}) async {
+    if (DateTime.now().difference(takenAt) > const Duration(hours: 36)) throw StateError('photo must be taken today');
+    if (_entries.any((e) => e.userId == 'me' && e.roomId == roomId && e.status == 'active')) throw StateError('already submitted today');
     _entries.add(_E(id: 'me-${roomId ?? 'g'}', userId: 'me', path: 'me/today.jpg', roomId: roomId));
-    return myEntry(roomId: roomId);
   }
+
+  int _required(String? roomId) {
+    final n = _pool(roomId).where((e) => e.userId != 'me').length;
+    return (n * (n - 1) ~/ 2).clamp(0, 10);
+  }
+
+  @override
+  Future<ArenaStatus> status({String? roomId}) async {
+    final has = _pool(roomId).any((e) => e.userId == 'me');
+    final req = _required(roomId);
+    return ArenaStatus(hasEntry: has, duelsToday: _duelsToday, required: req, unlocked: has && _duelsToday >= req, others: _pool(roomId).where((e) => e.userId != 'me').length);
+  }
+
+  bool _unlocked(String? roomId) => _pool(roomId).any((e) => e.userId == 'me') && _duelsToday >= _required(roomId);
 
   List<BoardRow> _board(String? roomId) {
     final pool = _pool(roomId)..sort((a, b) {
@@ -67,6 +81,7 @@ class FakeArenaApi implements ArenaApi {
 
   @override
   Future<MyEntry?> myEntry({DateTime? day, String? roomId}) async {
+    if (!_unlocked(roomId)) return null;
     final row = _board(roomId).where((r) => r.mine).firstOrNull;
     if (row == null) return null;
     return MyEntry(rank: row.rank, entryId: row.entryId, storagePath: row.storagePath, mu: row.mu, duels: row.duels, wins: row.wins, settled: row.settled, total: row.total);
@@ -106,8 +121,9 @@ class FakeArenaApi implements ArenaApi {
     final a = _entries.firstWhere((e) => e.id == aId);
     final b = _entries.firstWhere((e) => e.id == bId);
     if (a.userId == 'me' || b.userId == 'me') throw StateError('cannot rate your own photo');
+    if (!_pool(a.roomId).any((e) => e.userId == 'me')) throw StateError('enter a photo first');
+    if (_duelsToday >= 10) throw StateError('you have rated your set for today');
     if (!_rated.add(_key(aId, bId))) throw StateError('pair already rated');
-    if (_duelsToday >= 50) throw StateError('daily duel limit reached');
     final (na, nb) = Glicko.updatePair(Rating(mu: a.mu, rd: a.rd), Rating(mu: b.mu, rd: b.rd), winnerId == aId ? Outcome.win : Outcome.loss);
     a
       ..mu = na.mu
@@ -123,11 +139,30 @@ class FakeArenaApi implements ArenaApi {
   }
 
   @override
-  Future<int> myDuelsToday({String? roomId}) async => _duelsToday;
+  Future<List<BoardRow>> leaderboard({DateTime? day, String? roomId, String scope = 'global', int limit = 100, int offset = 0}) async {
+    if (day != null && !_isToday(day)) return _pastBoard(day);
+    if (!_unlocked(roomId)) return const [];
+    return _board(roomId).skip(offset).take(limit).toList();
+  }
+
+  bool _isToday(DateTime d) {
+    final t = DateTime.now().toUtc();
+    return d.year == t.year && d.month == t.month && d.day == t.day;
+  }
+
+  List<BoardRow> _pastBoard(DateTime day) => [
+        for (var i = 0; i < 12; i++)
+          BoardRow(rank: i + 1, entryId: 'p${day.day}-$i', userId: i == 4 ? 'me' : 'bot$i', username: i == 4 ? null : 'player${i + 1}', storagePath: 'bot/${(i + day.day) % 12}.jpg', mu: 1800 - i * 30, rd: 50, duels: 12, wins: 10 - i ~/ 2, settled: true, mine: i == 4, total: 12),
+      ];
 
   @override
-  Future<List<BoardRow>> leaderboard({DateTime? day, String? roomId, String scope = 'global', int limit = 100, int offset = 0}) async =>
-      _board(roomId).skip(offset).take(limit).toList();
+  Future<List<DaySummary>> days({String? roomId}) async {
+    final t = DateTime.now().toUtc();
+    return [
+      for (var i = 1; i <= 7; i++)
+        DaySummary(day: DateTime(t.year, t.month, t.day).subtract(Duration(days: i)), entries: 100 + i * 7, finalized: true, myFinalRank: i == 3 ? null : 2 + i * 3, myStoragePath: i == 3 ? null : 'bot/$i.jpg'),
+    ];
+  }
 
   @override
   Future<List<HistoryRow>> myHistory() async {

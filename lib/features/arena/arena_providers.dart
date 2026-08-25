@@ -28,7 +28,7 @@ class ArenaState {
     this.rooms = const [],
     this.myEntry,
     this.board = const [],
-    this.duelsToday = 0,
+    this.status = ArenaStatus.none,
     this.loading = true,
     this.error,
     this.consent = false,
@@ -41,7 +41,7 @@ class ArenaState {
   final List<Room> rooms;
   final MyEntry? myEntry;
   final List<BoardRow> board;
-  final int duelsToday;
+  final ArenaStatus status;
   final bool loading;
   final String? error;
   final bool consent;
@@ -50,7 +50,8 @@ class ArenaState {
   /// 'global' or 'friends' (people you follow + you).
   final String scope;
 
-  bool get canPlay => board.length >= 2 && duelsToday < ArenaConfig.maxDuelsPerDay;
+  /// Entered today but the set is not rated yet (and there is something to rate).
+  bool get needsToRate => status.hasEntry && !status.unlocked && status.left > 0;
   Room? get room => rooms.where((r) => r.id == roomId).firstOrNull;
 
   ArenaState copyWith({
@@ -61,7 +62,7 @@ class ArenaState {
     MyEntry? myEntry,
     bool clearEntry = false,
     List<BoardRow>? board,
-    int? duelsToday,
+    ArenaStatus? status,
     bool? loading,
     String? error,
     bool clearError = false,
@@ -75,7 +76,7 @@ class ArenaState {
         rooms: rooms ?? this.rooms,
         myEntry: clearEntry ? null : (myEntry ?? this.myEntry),
         board: board ?? this.board,
-        duelsToday: duelsToday ?? this.duelsToday,
+        status: status ?? this.status,
         loading: loading ?? this.loading,
         error: clearError ? null : (error ?? this.error),
         consent: consent ?? this.consent,
@@ -112,10 +113,10 @@ class ArenaController extends Notifier<ArenaState> {
     final api = await _api;
     if (api == null) return;
     try {
-      final entry = await api.myEntry(roomId: state.roomId);
-      final board = await api.leaderboard(roomId: state.roomId, scope: state.scope);
-      final duels = await api.myDuelsToday(roomId: state.roomId);
-      state = state.copyWith(myEntry: entry, clearEntry: entry == null, board: board, duelsToday: duels, loading: false, clearError: true);
+      final status = await api.status(roomId: state.roomId);
+      final entry = status.unlocked ? await api.myEntry(roomId: state.roomId) : null;
+      final board = status.unlocked ? await api.leaderboard(roomId: state.roomId, scope: state.scope) : const <BoardRow>[];
+      state = state.copyWith(status: status, myEntry: entry, clearEntry: entry == null, board: board, loading: false, clearError: true);
     } catch (e) {
       state = state.copyWith(loading: false, error: _msg(e));
     }
@@ -141,19 +142,23 @@ class ArenaController extends Notifier<ArenaState> {
     state = state.copyWith(consent: true);
   }
 
-  /// Uploads the chosen local photo (by DB id) as today's entry.
+  /// Uploads the chosen local photo (by DB id) as today's entry. The photo
+  /// must have been taken today (the server checks the capture time too).
   Future<bool> submit(int photoId) async {
     final api = await _api;
     if (api == null) return false;
     state = state.copyWith(busy: true, clearError: true);
     try {
       final row = await ref.read(photoRepoProvider).byId(photoId);
-      final entity = row == null ? null : await AssetEntity.fromId(row.mediaId);
+      final takenAt = row?.takenAt;
+      if (row == null || takenAt == null) throw StateError('That photo has no capture date.');
+      if (!isFromToday(takenAt)) throw StateError('Only a photo taken today can enter.');
+      final entity = await AssetEntity.fromId(row.mediaId);
       final bytes = await entity?.originBytes;
       if (bytes == null) throw StateError('Could not read that photo.');
       final prepared = await compute(_prepare, bytes);
       if (prepared == null) throw StateError('That file is not an image.');
-      await api.submit(prepared.bytes, roomId: state.roomId);
+      await api.submit(prepared.bytes, takenAt: takenAt, roomId: state.roomId);
       await refresh();
       return true;
     } catch (e) {
@@ -172,19 +177,26 @@ class ArenaController extends Notifier<ArenaState> {
     await refresh();
   }
 
-  Future<List<Pair>> startRound() async {
+  /// The set to rate: what is still owed, as disjoint pairs. Called again
+  /// when a page of pairs runs out (small pools pair fewer per call).
+  Future<List<Pair>> nextPairs() async {
     final api = await _api;
     if (api == null) return const [];
-    final left = ArenaConfig.maxDuelsPerDay - state.duelsToday;
-    return api.nextPairs(roomId: state.roomId, n: left.clamp(0, ArenaConfig.duelsPerRound));
+    final left = state.status.left;
+    if (left <= 0) return const [];
+    return api.nextPairs(roomId: state.roomId, n: left.clamp(1, ArenaConfig.duelsPerSet));
   }
 
   Future<void> recordDuel(Pair p, String winnerId) async {
     final api = await _api;
     if (api == null) return;
     await api.recordDuel(aId: p.aId, bId: p.bId, winnerId: winnerId);
-    state = state.copyWith(duelsToday: state.duelsToday + 1);
+    final st = state.status;
+    state = state.copyWith(status: ArenaStatus(hasEntry: st.hasEntry, duelsToday: st.duelsToday + 1, required: st.required, unlocked: st.hasEntry && st.duelsToday + 1 >= st.required, others: st.others));
   }
+
+  Future<List<DaySummary>> days() async => (await _api)?.days(roomId: state.roomId) ?? const [];
+  Future<List<BoardRow>> boardFor(DateTime day) async => (await _api)?.leaderboard(day: day, roomId: state.roomId) ?? const [];
 
   Future<Room?> createRoom(String name) async {
     final api = await _api;
@@ -234,6 +246,13 @@ class ArenaController extends Notifier<ArenaState> {
 }
 
 PreparedUpload? _prepare(Uint8List bytes) => prepareUpload(bytes);
+
+/// "Today" in the user's local calendar (the server allows 36 h of slack).
+bool isFromToday(DateTime takenAt, {DateTime? now}) {
+  final n = now ?? DateTime.now();
+  final t = takenAt.toLocal();
+  return t.year == n.year && t.month == n.month && t.day == n.day;
+}
 
 final arenaProvider = NotifierProvider<ArenaController, ArenaState>(ArenaController.new);
 

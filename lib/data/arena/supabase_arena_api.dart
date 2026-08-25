@@ -37,12 +37,22 @@ class SupabaseArenaApi implements ArenaApi {
   }
 
   @override
-  Future<MyEntry?> submit(Uint8List jpegBytes, {String? roomId}) async {
+  Future<void> submit(Uint8List jpegBytes, {required DateTime takenAt, String? roomId}) async {
     final uid = _client.auth.currentUser!.id;
     final path = '$uid/${_day(null)}-${roomId ?? 'global'}-${DateTime.now().millisecondsSinceEpoch}.jpg';
     await _client.storage.from(ArenaConfig.bucket).uploadBinary(path, jpegBytes, fileOptions: const FileOptions(contentType: 'image/jpeg'));
-    await _client.rpc('submit_entry', params: {'p_room': roomId, 'p_storage_path': path});
-    return myEntry(roomId: roomId);
+    try {
+      await _client.rpc('submit_entry', params: {'p_room': roomId, 'p_storage_path': path, 'p_taken_at': takenAt.toUtc().toIso8601String()});
+    } catch (e) {
+      await _client.storage.from(ArenaConfig.bucket).remove([path]);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ArenaStatus> status({String? roomId}) async {
+    final rows = await _client.rpc('arena_status', params: {'p_room': roomId}) as List;
+    return rows.isEmpty ? ArenaStatus.none : ArenaStatus.fromJson((rows.first as Map).cast<String, dynamic>());
   }
 
   @override
@@ -65,10 +75,6 @@ class SupabaseArenaApi implements ArenaApi {
       _client.rpc('record_duel', params: {'p_a': aId, 'p_b': bId, 'p_winner': winnerId});
 
   @override
-  Future<int> myDuelsToday({String? roomId}) async =>
-      (await _client.rpc('my_duels_today', params: {'p_room': roomId}) as num).toInt();
-
-  @override
   Future<List<BoardRow>> leaderboard({DateTime? day, String? roomId, String scope = 'global', int limit = 100, int offset = 0}) async {
     final rows = await _client.rpc('leaderboard', params: {'p_day': _day(day), 'p_room': roomId, 'p_scope': scope, 'p_limit': limit, 'p_offset': offset}) as List;
     return [for (final r in rows) BoardRow.fromJson((r as Map).cast<String, dynamic>())];
@@ -78,6 +84,12 @@ class SupabaseArenaApi implements ArenaApi {
   Future<List<HistoryRow>> myHistory() async {
     final rows = await _client.rpc('my_history') as List;
     return [for (final r in rows) HistoryRow.fromJson((r as Map).cast<String, dynamic>())];
+  }
+
+  @override
+  Future<List<DaySummary>> days({String? roomId}) async {
+    final rows = await _client.rpc('arena_days', params: {'p_room': roomId}) as List;
+    return [for (final r in rows) DaySummary.fromJson((r as Map).cast<String, dynamic>())];
   }
 
   @override

@@ -8,17 +8,19 @@ abstract class ArenaApi {
   Future<ArenaProfile> signIn();
   ArenaProfile? get me;
 
-  /// Uploads a prepared image and registers today's entry.
-  Future<MyEntry?> submit(Uint8List jpegBytes, {String? roomId});
+  /// Uploads a prepared image and registers today's entry. [takenAt] is the
+  /// photo's capture time; the server rejects photos not from today.
+  Future<void> submit(Uint8List jpegBytes, {required DateTime takenAt, String? roomId});
+  Future<ArenaStatus> status({String? roomId});
   Future<MyEntry?> myEntry({DateTime? day, String? roomId});
   Future<void> deleteEntry(String entryId);
 
   Future<List<Pair>> nextPairs({String? roomId, int n = 10});
   Future<void> recordDuel({required String aId, required String bId, required String winnerId});
-  Future<int> myDuelsToday({String? roomId});
 
   Future<List<BoardRow>> leaderboard({DateTime? day, String? roomId, String scope = 'global', int limit = 100, int offset = 0});
   Future<List<HistoryRow>> myHistory();
+  Future<List<DaySummary>> days({String? roomId});
 
   Future<List<Room>> myRooms();
   Future<Room> createRoom(String name);

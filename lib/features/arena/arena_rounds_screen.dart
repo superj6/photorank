@@ -25,7 +25,12 @@ class _ArenaRoundsScreenState extends ConsumerState<ArenaRoundsScreen> {
   @override
   void initState() {
     super.initState();
-    ref.read(arenaProvider.notifier).startRound().then((p) => setState(() => _pairs = p));
+    _load();
+  }
+
+  Future<void> _load() async {
+    final p = await ref.read(arenaProvider.notifier).nextPairs();
+    if (mounted) setState(() => _pairs = p);
   }
 
   Future<void> _pick(Pair p, String id) async {
@@ -47,7 +52,21 @@ class _ArenaRoundsScreenState extends ConsumerState<ArenaRoundsScreen> {
       _picked = null;
       _busy = false;
     });
-    if (_index >= (_pairs?.length ?? 0)) ref.read(arenaProvider.notifier).refresh();
+    if (_index >= (_pairs?.length ?? 0)) {
+      // Small pools yield fewer disjoint pairs per call; keep going until the set is done.
+      final st = ref.read(arenaProvider).status;
+      if (st.left > 0) {
+        final more = await ref.read(arenaProvider.notifier).nextPairs();
+        if (mounted && more.isNotEmpty) {
+          setState(() {
+            _pairs = more;
+            _index = 0;
+          });
+          return;
+        }
+      }
+      await ref.read(arenaProvider.notifier).refresh();
+    }
   }
 
   @override
@@ -56,7 +75,7 @@ class _ArenaRoundsScreenState extends ConsumerState<ArenaRoundsScreen> {
     final done = pairs != null && _index >= pairs.length;
     final s = ref.watch(arenaProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(done ? 'Round done' : 'Which one?')),
+      appBar: AppBar(title: Text(done ? 'Set rated' : 'Which one?  ·  ${s.status.left} left')),
       body: SafeArea(
         child: pairs == null
             ? const Center(child: CircularProgressIndicator())
@@ -67,7 +86,7 @@ class _ArenaRoundsScreenState extends ConsumerState<ArenaRoundsScreen> {
                     : Column(children: [
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                          child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: _index / pairs.length, minHeight: 4, backgroundColor: Colors.white10, color: AppTheme.accent)),
+                          child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: s.status.required == 0 ? 1 : s.status.duelsToday / s.status.required, minHeight: 4, backgroundColor: Colors.white10, color: AppTheme.accent)),
                         ),
                         Expanded(
                           child: Padding(
@@ -126,14 +145,14 @@ class _Done extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.check_circle_rounded, size: 64, color: AppTheme.accent).animate().scale(curve: Curves.elasticOut, duration: 700.ms),
           const SizedBox(height: 16),
-          const Text('Thanks for rating.', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+          const Text('Set rated — board unlocked.', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(
             e == null
-                ? 'Enter a photo to see where you stand.'
+                ? 'Today\'s leaderboard is now open to you.'
                 : e.settled
                     ? 'Your photo is #${e.rank} of ${e.total} right now.'
-                    : 'Your photo is still settling (${e.duels}/6 duels).',
+                    : 'Your photo is still settling (${e.duels}/6 duels) — others are rating it.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white70),
           ),

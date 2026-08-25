@@ -12,6 +12,6 @@ class ArenaConfig {
   static bool get configured => url.isNotEmpty && anonKey.isNotEmpty;
 
   static const bucket = 'entries';
-  static const duelsPerRound = 10;
-  static const maxDuelsPerDay = 50;
+  /// The one set you rate right after entering (fewer in tiny pools).
+  static const duelsPerSet = 10;
 }

@@ -98,6 +98,7 @@ class HistoryRow {
   final int wins;
   final String status;
   int? get rank => finalRank ?? liveRank;
+  int? get percentile => rank == null || total <= 0 ? null : (100 - (rank! - 1) * 100 ~/ total).clamp(1, 100);
   static HistoryRow fromJson(Map<String, dynamic> j) => HistoryRow(
         day: DateTime.parse(j['day'] as String),
         roomId: j['room_id'] as String?,
@@ -133,4 +134,40 @@ class ArenaProfile {
   final String id;
   final String? username;
   final String? displayName;
+}
+
+/// Where the caller stands today: entered? rated the set? board unlocked?
+class ArenaStatus {
+  const ArenaStatus({required this.hasEntry, required this.duelsToday, required this.required, required this.unlocked, required this.others});
+  final bool hasEntry;
+  final int duelsToday;
+  final int required;
+  final bool unlocked;
+  final int others;
+  int get left => (required - duelsToday).clamp(0, required);
+  static const none = ArenaStatus(hasEntry: false, duelsToday: 0, required: 0, unlocked: false, others: 0);
+  static ArenaStatus fromJson(Map<String, dynamic> j) => ArenaStatus(
+        hasEntry: j['has_entry'] as bool,
+        duelsToday: j['duels_today'] as int,
+        required: j['required'] as int,
+        unlocked: j['unlocked'] as bool,
+        others: j['others'] as int,
+      );
+}
+
+/// A past day with a final board.
+class DaySummary {
+  const DaySummary({required this.day, required this.entries, required this.finalized, this.myFinalRank, this.myStoragePath});
+  final DateTime day;
+  final int entries;
+  final bool finalized;
+  final int? myFinalRank;
+  final String? myStoragePath;
+  static DaySummary fromJson(Map<String, dynamic> j) => DaySummary(
+        day: DateTime.parse(j['day'] as String),
+        entries: j['entries'] as int,
+        finalized: j['finalized'] as bool,
+        myFinalRank: j['my_final_rank'] as int?,
+        myStoragePath: j['my_storage_path'] as String?,
+      );
 }
