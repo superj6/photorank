@@ -16,6 +16,13 @@ phone; only ratings are stored.
   Time Machine, Deep Cuts) plus "Deal me 9". Double-tap ♥ is a light signal.
 - **Ranking** is the grid output; **Settings** controls the game mix, hand
   size and library scope.
+- **Beats** (`lib/core/beats`) keep play fresh: every 20–35 decisions a short
+  in-play moment appears — your Top 3, a climber, a head-to-head to settle, a
+  deep cut, a themed 10-card deck — plus majors on milestones, a new #1, the
+  Top 10 settling, and mode unlocks (new installs start with Duel + Vibe check
+  and unlock Rate/Burst/Sort/Challenger/Re-rank at 30/60/100/150/300
+  decisions). Every beat is kept under Ranking → Moments and the big ones are
+  shareable. Debug builds have "fire a beat" chips in Settings.
 
 Design doc / roadmap: `~/.claude/plans/i-want-to-make-mossy-willow.md`.
 
@@ -74,8 +81,9 @@ Or install the prebuilt debug APK: `flutter build apk --debug` →
 lib/core/rating    glicko.dart, anchors.dart, observation.dart, engine.dart
 lib/core/dealer    dealer.dart, priority.dart, burst_cluster.dart, photo_state.dart
 lib/core/sampler   rank_sampler.dart (Browse channels)
+lib/core/beats     beat.dart (pages/JSON), beat_scheduler.dart, beat_engine.dart, unlocks.dart, late_game.dart
 lib/data/db        Drift schema (+ generated database.g.dart)
 lib/data/repo      PhotoRepo, RankingRepo (applyCard / undoCard)
 lib/data/media     LibraryScanner (photo_manager), ThumbCache
-lib/features       play/, browse/, ranking/, settings/, onboarding/, shell/
+lib/features       play/, beats/, browse/, ranking/, settings/, onboarding/, shell/
 ```
