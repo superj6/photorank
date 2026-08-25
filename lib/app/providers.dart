@@ -64,6 +64,9 @@ final rankingProvider = StreamProvider<List<PhotoState>>((ref) async* {
 final photoRowProvider =
     FutureProvider.family<PhotoRow?, int>((ref, id) => ref.watch(photoRepoProvider).byId(id));
 
+/// Raw pref lookup; invalidate after writing.
+final prefProvider = FutureProvider.family<String?, String>((ref, key) => ref.watch(photoRepoProvider).pref(key));
+
 final libraryCountProvider = FutureProvider<int>((ref) {
   ref.watch(scanProvider); // refresh as the scan progresses
   return ref.watch(photoRepoProvider).count();

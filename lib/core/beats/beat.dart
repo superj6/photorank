@@ -18,6 +18,14 @@ enum BeatKind {
   modeUnlocked,
   themedHand,
   welcomeBack,
+  weekly,
+  monthly,
+  yearly,
+}
+
+/// Calendar recaps reuse the beat page system.
+extension BeatKindX on BeatKind {
+  bool get isCalendar => this == BeatKind.weekly || this == BeatKind.monthly || this == BeatKind.yearly;
 }
 
 enum BeatTier { minor, major }
@@ -107,6 +115,13 @@ sealed class BeatPage {
           topHeld: j['topHeld'] as bool,
           topId: j['topId'] as int?,
         ),
+      'periodCover' => PeriodCoverPage(kind: BeatKind.values.byName(j['kind'] as String), label: j['label'] as String, start: DateTime.parse(j['start'] as String), end: DateTime.parse(j['end'] as String)),
+      'numbers' => NumbersPage(decisions: j['decisions'] as int, sessions: j['sessions'] as int, minutes: j['minutes'] as int, streak: j['streak'] as int, newPhotos: j['newPhotos'] as int),
+      'topNine' => TopNinePage(ids: ints('ids'), title: j['title'] as String),
+      'bestOfPeriod' => BestOfPeriodPage(photoId: j['photoId'] as int, label: j['label'] as String),
+      'bestOfMonths' => BestOfMonthsPage(entries: [for (final e in (j['entries'] as List)) ((e as Map)['month'] as int, e['photoId'] as int)]),
+      'taste' => TastePage(portraitPct: j['portraitPct'] as int, favoriteMonth: j['favoriteMonth'] as int?, favoriteHour: j['favoriteHour'] as int?, photosTaken: j['photosTaken'] as int, photosRanked: j['photosRanked'] as int),
+      'trend' => TrendPage(settledBefore: j['settledBefore'] as int, settledAfter: j['settledAfter'] as int, total: j['total'] as int),
       final t => throw ArgumentError('unknown page type $t'),
     };
   }
@@ -233,6 +248,72 @@ class WelcomeBackPage extends BeatPage {
   final int? topId;
   @override
   Map<String, dynamic> toJson() => {'type': 'welcomeBack', 'daysAway': daysAway, 'newPhotos': newPhotos, 'topHeld': topHeld, 'topId': topId};
+}
+
+class PeriodCoverPage extends BeatPage {
+  const PeriodCoverPage({required this.kind, required this.label, required this.start, required this.end});
+  final BeatKind kind;
+  final String label;
+  final DateTime start;
+  final DateTime end;
+  @override
+  Map<String, dynamic> toJson() => {'type': 'periodCover', 'kind': kind.name, 'label': label, 'start': start.toIso8601String(), 'end': end.toIso8601String()};
+}
+
+class NumbersPage extends BeatPage {
+  const NumbersPage({required this.decisions, required this.sessions, required this.minutes, required this.streak, required this.newPhotos});
+  final int decisions;
+  final int sessions;
+  final int minutes;
+  final int streak;
+  final int newPhotos;
+  @override
+  Map<String, dynamic> toJson() => {'type': 'numbers', 'decisions': decisions, 'sessions': sessions, 'minutes': minutes, 'streak': streak, 'newPhotos': newPhotos};
+}
+
+class TopNinePage extends BeatPage {
+  const TopNinePage({required this.ids, required this.title});
+  final List<int> ids;
+  final String title;
+  @override
+  Map<String, dynamic> toJson() => {'type': 'topNine', 'ids': ids, 'title': title};
+}
+
+class BestOfPeriodPage extends BeatPage {
+  const BestOfPeriodPage({required this.photoId, required this.label});
+  final int photoId;
+  final String label;
+  @override
+  Map<String, dynamic> toJson() => {'type': 'bestOfPeriod', 'photoId': photoId, 'label': label};
+}
+
+class BestOfMonthsPage extends BeatPage {
+  const BestOfMonthsPage({required this.entries});
+
+  /// (month 1–12, photoId), in month order.
+  final List<(int, int)> entries;
+  @override
+  Map<String, dynamic> toJson() => {'type': 'bestOfMonths', 'entries': [for (final e in entries) {'month': e.$1, 'photoId': e.$2}]};
+}
+
+class TastePage extends BeatPage {
+  const TastePage({required this.portraitPct, this.favoriteMonth, this.favoriteHour, required this.photosTaken, required this.photosRanked});
+  final int portraitPct;
+  final int? favoriteMonth;
+  final int? favoriteHour;
+  final int photosTaken;
+  final int photosRanked;
+  @override
+  Map<String, dynamic> toJson() => {'type': 'taste', 'portraitPct': portraitPct, 'favoriteMonth': favoriteMonth, 'favoriteHour': favoriteHour, 'photosTaken': photosTaken, 'photosRanked': photosRanked};
+}
+
+class TrendPage extends BeatPage {
+  const TrendPage({required this.settledBefore, required this.settledAfter, required this.total});
+  final int settledBefore;
+  final int settledAfter;
+  final int total;
+  @override
+  Map<String, dynamic> toJson() => {'type': 'trend', 'settledBefore': settledBefore, 'settledAfter': settledAfter, 'total': total};
 }
 
 /// A generated moment: 1–3 pages, an optional CTA, shareable or not.

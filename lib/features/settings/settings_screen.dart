@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/notifications.dart';
 import '../../app/providers.dart';
 import '../../core/beats/beat.dart';
 import '../../core/beats/unlocks.dart';
@@ -119,6 +120,34 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/moments'),
           ),
+          ListTile(
+            leading: const Icon(Icons.calendar_today_rounded),
+            title: Text('Show my year · ${DateTime.now().year}'),
+            subtitle: const Text('Your year in photos, any time'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final ok = await ref.read(sessionProvider.notifier).showYear(DateTime.now().year);
+              if (!context.mounted) return;
+              if (ok) {
+                context.go('/play');
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Play a few more hands first — not enough to recap yet.')));
+              }
+            },
+          ),
+          const _Section('Reminders'),
+          _NotifyToggle(
+            prefKey: 'notify_weekly',
+            title: 'Weekly recap',
+            subtitle: 'A nudge when your week in photos is ready',
+            apply: Notifications.setWeeklyRecap,
+          ),
+          _NotifyToggle(
+            prefKey: 'notify_daily',
+            title: 'Daily hand',
+            subtitle: 'One reminder a day that photos await a verdict',
+            apply: Notifications.setDailyReminder,
+          ),
           if (kDebugMode) ...[
             const _Section('Debug · fire a beat'),
             Padding(
@@ -173,6 +202,35 @@ class _Section extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(title.toUpperCase(),
           style: const TextStyle(fontSize: 12, letterSpacing: 1.2, color: Colors.white54, fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _NotifyToggle extends ConsumerWidget {
+  const _NotifyToggle({required this.prefKey, required this.title, required this.subtitle, required this.apply});
+  final String prefKey;
+  final String title;
+  final String subtitle;
+  final Future<void> Function(bool) apply;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final value = ref.watch(prefProvider(prefKey)).value == '1';
+    return SwitchListTile(
+      title: Text(title),
+      subtitle: Text(subtitle),
+      value: value,
+      onChanged: (v) async {
+        if (v && !await Notifications.requestPermission()) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notifications are off for PhotoRank in system settings.')));
+          }
+          return;
+        }
+        await apply(v);
+        await ref.read(photoRepoProvider).setPref(prefKey, v ? '1' : '0');
+        ref.invalidate(prefProvider(prefKey));
+      },
     );
   }
 }

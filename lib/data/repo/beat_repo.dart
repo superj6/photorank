@@ -4,6 +4,9 @@ import 'package:drift/drift.dart';
 
 import '../../core/dealer/photo_state.dart';
 import '../../core/rating/glicko.dart';
+import '../../core/beats/beat.dart';
+import '../../core/beats/beat_engine.dart';
+import '../../core/beats/recap.dart';
 import '../../core/rating/observation.dart';
 import '../db/database.dart';
 
@@ -47,6 +50,60 @@ class BeatRepo {
     return row.read<int>('n');
   }
 
+  /// Answered cards whose first observation falls in [start, end).
+  Future<int> decisionCountBetween(DateTime start, DateTime end) async {
+    final row = await db
+        .customSelect(
+          "SELECT COUNT(DISTINCT card_id) AS n FROM observations WHERE mode IN (${_dealtModes.map((m) => "'$m'").join(',')}) "
+          'AND created_at >= ? AND created_at < ?',
+          variables: [Variable.withDateTime(start), Variable.withDateTime(end)],
+          readsFrom: {db.observations},
+        )
+        .getSingle();
+    return row.read<int>('n');
+  }
+
+  /// Period keys of calendar recaps already generated.
+  Future<Set<String>> savedRecapKeys() async {
+    final rows = await (db.select(db.beats)
+          ..where((b) => b.kind.isIn([BeatKind.weekly.name, BeatKind.monthly.name, BeatKind.yearly.name])))
+        .get();
+    final keys = <String>{};
+    for (final r in rows) {
+      final j = jsonDecode(r.payloadJson) as Map<String, dynamic>;
+      for (final p in (j['pages'] as List)) {
+        if (p['type'] == 'periodCover') {
+          keys.add(Period(BeatKind.values.byName(p['kind'] as String), DateTime.parse(p['start'] as String), DateTime.parse(p['end'] as String)).key);
+        }
+      }
+    }
+    return keys;
+  }
+
+  /// Everything the recap engine needs for [period].
+  Future<RecapInput> recapInput(int axisId, Period period, List<PhotoState> states, {DateTime? now}) async {
+    final ts = now ?? DateTime.now();
+    final all = await sessions();
+    final inPeriod = all.where((s) => period.contains(s.startedAt)).toList();
+    final ratingsAtStart = await ratingsAsOf(axisId, period.start);
+    final settledAtStart = states.where((s) => (ratingsAtStart[s.id] ?? Rating.initial).confidence >= 0.5).length;
+    final movers = await moversSince(axisId, period.start);
+    final pairs = await pairRecords(axisId, since: period.start);
+    return RecapInput(
+      period: period,
+      states: states,
+      decisions: await decisionCountBetween(period.start, period.end),
+      sessions: inPeriod.length,
+      minutes: minutesPlayed(inPeriod).inMinutes,
+      streak: streak(all.map((s) => s.startedAt), ts),
+      ratingsAtStart: ratingsAtStart,
+      settledAtStart: settledAtStart,
+      movers: [for (final m in movers) MoverInfo(photoId: m.photoId, before: m.before, after: m.after)],
+      pairs: [for (final p in pairs) PairInfo(a: p.a, b: p.b, aWins: p.aWins, bWins: p.bWins)],
+      now: ts,
+    );
+  }
+
   /// Ratings as they stood at [t]: the pre-update snapshot of each photo's
   /// first observation at/after [t], else its current rating.
   Future<Map<int, Rating>> ratingsAsOf(int axisId, DateTime t, {Map<int, Rating>? current}) async {
@@ -87,12 +144,12 @@ class BeatRepo {
   }
 
   /// Head-to-head records for pairs that duelled at least [minDuels] times.
-  Future<List<PairRecord>> pairRecords(int axisId, {int minDuels = 2}) async {
+  Future<List<PairRecord>> pairRecords(int axisId, {int minDuels = 2, DateTime? since}) async {
     final rows = await (db.select(db.observations)
-          ..where((o) =>
-              o.axisId.equals(axisId) &
-              o.opponentId.isNotNull() &
-              o.mode.isIn(['duel', 'challenger'])))
+          ..where((o) {
+            final base = o.axisId.equals(axisId) & o.opponentId.isNotNull() & o.mode.isIn(['duel', 'challenger']);
+            return since == null ? base : base & o.createdAt.isBiggerOrEqualValue(since);
+          }))
         .get();
     final wins = <(int, int), List<int>>{}; // key (lo, hi) -> [loWins, hiWins]
     for (final r in rows) {

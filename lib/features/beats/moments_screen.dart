@@ -96,7 +96,13 @@ class MomentsScreen extends ConsumerWidget {
           return ids.firstOrNull;
         case WelcomeBackPage(:final topId):
           return topId;
-        case SettledPage() || MilestonePage() || ModeUnlockedPage() || ThemedHandPage():
+        case BestOfPeriodPage(:final photoId):
+          return photoId;
+        case TopNinePage(:final ids):
+          return ids.firstOrNull;
+        case BestOfMonthsPage(:final entries):
+          return entries.firstOrNull?.$2;
+        case SettledPage() || MilestonePage() || ModeUnlockedPage() || ThemedHandPage() || PeriodCoverPage() || NumbersPage() || TastePage() || TrendPage():
           continue;
       }
     }
@@ -117,13 +123,21 @@ class MomentsScreen extends ConsumerWidget {
         BeatKind.modeUnlocked => 'New mode unlocked',
         BeatKind.themedHand => 'Themed hand',
         BeatKind.welcomeBack => 'Welcome back',
+        BeatKind.weekly => 'Your week · ${_periodLabel(b)}',
+        BeatKind.monthly => 'Your month · ${_periodLabel(b)}',
+        BeatKind.yearly => 'Your year · ${_periodLabel(b)}',
       };
+
+  static String _periodLabel(Beat b) => b.pages.whereType<PeriodCoverPage>().firstOrNull?.label ?? '';
 
   static IconData _icon(BeatKind k) => switch (k) {
         BeatKind.milestone => Icons.flag_rounded,
         BeatKind.settledPct => Icons.donut_large_rounded,
         BeatKind.modeUnlocked => Icons.lock_open_rounded,
         BeatKind.themedHand => Icons.style_rounded,
+        BeatKind.weekly => Icons.view_week_rounded,
+        BeatKind.monthly => Icons.calendar_month_rounded,
+        BeatKind.yearly => Icons.auto_awesome_rounded,
         _ => Icons.auto_awesome,
       };
 

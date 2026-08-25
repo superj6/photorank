@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../app/theme.dart';
 import '../../core/beats/beat.dart';
+import '../../core/beats/recap.dart';
 import '../../core/rating/observation.dart';
 import '../settings/settings_screen.dart';
 import '../widgets/photo_tile.dart';
@@ -117,6 +118,75 @@ class BeatPageView extends StatelessWidget {
           footer: '${p.count} cards from one slice of your library. Deal it?',
           child: Center(child: Icon(_themeIcon(p.theme), size: 140, color: AppTheme.accent).animate().fadeIn().scale(begin: const Offset(0.7, 0.7))),
         ),
+      PeriodCoverPage p => _Frame(
+          eyebrow: switch (p.kind) { BeatKind.weekly => 'Your week', BeatKind.monthly => 'Your month', _ => 'Your year' },
+          title: p.label,
+          footer: switch (p.kind) {
+            BeatKind.weekly => 'Seven days of decisions, in a few pages.',
+            BeatKind.monthly => 'A month of ranking, recapped.',
+            _ => 'Your year in photos. Swipe through.',
+          },
+          child: Center(
+            child: Icon(
+              switch (p.kind) { BeatKind.weekly => Icons.view_week_rounded, BeatKind.monthly => Icons.calendar_month_rounded, _ => Icons.auto_awesome_rounded },
+              size: 160,
+              color: AppTheme.accent,
+            ).animate().scale(begin: const Offset(0.5, 0.5), curve: Curves.elasticOut, duration: 900.ms).then().shimmer(duration: 900.ms),
+          ),
+        ),
+      NumbersPage p => _Frame(
+          eyebrow: 'By the numbers',
+          title: '${p.decisions} decisions',
+          footer: '${p.newPhotos} new photos joined the game',
+          child: _Numbers(items: [
+            ('${p.sessions}', 'hands'),
+            ('${p.minutes}', 'minutes'),
+            ('${p.streak}', 'day streak'),
+          ]),
+        ),
+      TopNinePage p => _Frame(
+          eyebrow: 'Top 9',
+          title: p.title,
+          footer: 'Ranked by you. Share it.',
+          child: _Grid(ids: p.ids, columns: 3),
+        ),
+      BestOfPeriodPage p => _Frame(
+          eyebrow: 'Best of',
+          title: p.label,
+          footer: 'The photo from this period you rank highest.',
+          child: _Hero(id: p.photoId, badge: '#1'),
+        ),
+      BestOfMonthsPage p => _Frame(
+          eyebrow: 'Month by month',
+          title: 'One keeper each',
+          footer: 'Your top photo from every month you shot in.',
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 6, crossAxisSpacing: 6, childAspectRatio: 0.78),
+            itemCount: p.entries.length,
+            itemBuilder: (_, i) => BeatPhoto(p.entries[i].$2, borderRadius: 10, size: ThumbCacheSizes.grid,
+                    child: Align(alignment: Alignment.bottomLeft, child: Padding(padding: const EdgeInsets.all(6), child: Pill(Period.monthName(p.entries[i].$1)))))
+                .animate(delay: (i * 60).ms)
+                .fadeIn()
+                .scale(begin: const Offset(0.9, 0.9)),
+          ),
+        ),
+      TastePage p => _Frame(
+          eyebrow: 'Your taste',
+          title: '${p.portraitPct}% portrait',
+          footer: '${p.photosRanked} of ${p.photosTaken} photos from this period are ranked',
+          child: _Numbers(items: [
+            if (p.favoriteMonth != null) (Period.monthName(p.favoriteMonth!), 'busiest month'),
+            if (p.favoriteHour != null) (_hour(p.favoriteHour!), 'golden hour'),
+            ('${p.photosTaken}', 'photos taken'),
+          ]),
+        ),
+      TrendPage p => _Frame(
+          eyebrow: 'Progress',
+          title: '${p.settledBefore} → ${p.settledAfter} settled',
+          footer: '${(p.settledAfter * 100 / (p.total == 0 ? 1 : p.total)).round()}% of your library now has a confident rank',
+          child: Center(child: _Ring(fraction: p.settledAfter / (p.total == 0 ? 1 : p.total), label: '+${p.settledAfter - p.settledBefore}')),
+        ),
       WelcomeBackPage p => _Frame(
           eyebrow: 'Welcome back',
           title: '${p.daysAway} days away',
@@ -125,6 +195,8 @@ class BeatPageView extends StatelessWidget {
         ),
     };
   }
+
+  static String _hour(int h) => h == 0 ? '12am' : h < 12 ? '${h}am' : h == 12 ? '12pm' : '${h - 12}pm';
 
   static String _days(int d) => d == 0 ? 'since today' : d == 1 ? 'since yesterday' : 'over $d days';
 
@@ -286,6 +358,30 @@ class _NewTop extends StatelessWidget {
                 .slideX(begin: 0.3, end: 0),
           ),
       ],
+    );
+  }
+}
+
+class _Numbers extends StatelessWidget {
+  const _Numbers({required this.items});
+  final List<(String, String)> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (final (i, it) in items.indexed)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Column(children: [
+                Text(it.$1, style: const TextStyle(fontSize: 56, fontWeight: FontWeight.w800, color: AppTheme.accent, letterSpacing: -1.5)),
+                Text(it.$2.toUpperCase(), style: const TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.white60, fontWeight: FontWeight.w700)),
+              ]).animate(delay: (150 * i).ms).fadeIn().slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+            ),
+        ],
+      ),
     );
   }
 }

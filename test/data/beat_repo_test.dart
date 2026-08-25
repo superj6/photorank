@@ -1,6 +1,9 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photorank/core/beats/beat.dart';
+import 'package:photorank/core/beats/recap.dart';
 import 'package:photorank/core/rating/glicko.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:photorank/core/rating/observation.dart';
 import 'package:photorank/data/db/database.dart';
 import 'package:photorank/data/media/scanned_asset.dart';
@@ -9,6 +12,7 @@ import 'package:photorank/data/repo/photo_repo.dart';
 import 'package:photorank/data/repo/ranking_repo.dart';
 
 void main() {
+  recapRepoTests();
   late AppDatabase db;
   late PhotoRepo photos;
   late RankingRepo ranking;
@@ -116,5 +120,42 @@ void main() {
 
   test('schema v2 migration path opens on a fresh database with unlock_all unset', () async {
     expect(await photos.pref('unlock_all'), isNull);
+  });
+}
+
+void recapRepoTests() {
+  test('recapInput fills period stats from the log', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final photos = PhotoRepo(db);
+    final ranking = RankingRepo(db);
+    final beats = BeatRepo(db);
+    final axis = await db.defaultAxisId();
+    final now = DateTime(2026, 8, 26, 9);
+    final week = RecapScheduler.lastWeek(now); // Aug 17–23
+    await photos.upsertAssets([
+      for (var i = 0; i < 12; i++)
+        ScannedAsset(mediaId: 'p$i', takenAt: week.start.add(Duration(hours: 6 * i)), width: i.isEven ? 4 : 3, height: 3),
+    ], now: week.start);
+    // Two sessions inside the week, one before.
+    for (final (n, at) in [(0, week.start.subtract(const Duration(days: 2))), (1, week.start.add(const Duration(days: 1))), (2, week.start.add(const Duration(days: 3)))]) {
+      await db.into(db.sessions).insert(SessionsCompanion.insert(startedAt: at, endedAt: Value(at.add(const Duration(minutes: 4))), cards: const Value(5)));
+      await ranking.applyCard(Decompose.rate(axisId: axis, cardId: 'c$n', photoId: n + 1, stars: 5, now: at), now: at);
+      await ranking.applyCard(Decompose.duel(axisId: axis, cardId: 'd$n', winnerId: n + 1, loserId: 6, now: at), now: at);
+    }
+    final states = await ranking.photoStates(axis);
+    final input = await beats.recapInput(axis, week, states, now: now);
+    expect(input.sessions, 2);
+    expect(input.decisions, 4);
+    expect(input.minutes, 8);
+    expect(input.takenInPeriod.length, 12);
+    expect(input.settledAtStart, lessThanOrEqualTo(input.settledNow));
+    expect(input.movers.map((m) => m.photoId), containsAll([2, 3, 6]));
+    expect(await beats.savedRecapKeys(), isEmpty);
+    await beats.saveBeat(kind: 'weekly', decisionCount: 4, payload: {
+      'kind': 'weekly', 'tier': 'major', 'shareable': true,
+      'pages': [PeriodCoverPage(kind: BeatKind.weekly, label: week.label, start: week.start, end: week.end).toJson()],
+    });
+    expect(await beats.savedRecapKeys(), {week.key});
   });
 }

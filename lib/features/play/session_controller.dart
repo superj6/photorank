@@ -9,6 +9,7 @@ import '../../core/beats/beat.dart';
 import '../../core/beats/beat_engine.dart';
 import '../../core/beats/beat_scheduler.dart';
 import '../../core/beats/late_game.dart';
+import '../../core/beats/recap.dart';
 import '../../core/beats/unlocks.dart';
 import '../../core/dealer/dealer.dart';
 import '../../core/rating/engine.dart';
@@ -187,6 +188,29 @@ class SessionController extends Notifier<SessionState> {
       decisions: _decisions,
     );
     await _welcomeBack(sessions, states, now);
+    if (state.beat == null) await _calendarRecap(sessions, states, now);
+  }
+
+  Future<void> _calendarRecap(List<SessionRow> sessions, List<PhotoState> states, DateTime now) async {
+    final due = RecapScheduler.due(
+      now: now,
+      sessionStarts: sessions.map((s) => s.startedAt),
+      savedKeys: await _beats.savedRecapKeys(),
+    );
+    if (due == null) return;
+    final beat = RecapEngine.build(await _beats.recapInput(_axis, due, states, now: now));
+    if (beat != null) await _show(beat, schedule: false);
+  }
+
+  /// On-demand yearly recap ("Show my year"). Returns false if there is too
+  /// little to show.
+  Future<bool> showYear(int year) async {
+    if (state.status == SessionStatus.idle || state.status == SessionStatus.loading) await start();
+    final states = await ref.read(rankingRepoProvider).photoStates(_axis);
+    final beat = RecapEngine.build(await _beats.recapInput(_axis, RecapScheduler.year(year), states));
+    if (beat == null) return false;
+    await _show(beat, schedule: false);
+    return true;
   }
 
   void _initTracking(List<PhotoState> states) {
