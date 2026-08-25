@@ -328,7 +328,7 @@ declare
 begin
   if uid is null then raise exception 'not signed in'; end if;
   loop
-    c := upper(substr(encode(gen_random_bytes(4), 'hex'), 1, 6));
+    c := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
     exit when not exists (select 1 from public.rooms where code = c);
   end loop;
   insert into public.rooms (code, name, owner_id) values (c, p_name, uid) returning * into r;
@@ -378,6 +378,12 @@ begin
   return n;
 end $$;
 
+-- Membership check that does not re-enter RLS (avoids policy recursion).
+create or replace function public.is_room_member(p_room uuid) returns boolean
+language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.room_members where room_id = p_room and user_id = auth.uid())
+$$;
+
 -- --------------------------------------------------------------------- RLS
 alter table public.profiles enable row level security;
 alter table public.days enable row level security;
@@ -393,9 +399,9 @@ create policy "profiles readable" on public.profiles for select to authenticated
 create policy "own profile update" on public.profiles for update to authenticated using (id = auth.uid());
 create policy "days readable" on public.days for select to authenticated using (true);
 create policy "rooms readable to members" on public.rooms for select to authenticated
-  using (exists (select 1 from public.room_members m where m.room_id = id and m.user_id = auth.uid()));
+  using (public.is_room_member(id));
 create policy "members readable" on public.room_members for select to authenticated
-  using (exists (select 1 from public.room_members m where m.room_id = room_id and m.user_id = auth.uid()));
+  using (public.is_room_member(room_id));
 create policy "active entries readable" on public.entries for select to authenticated
   using (status = 'active' or user_id = auth.uid());
 create policy "own duels readable" on public.duels for select to authenticated using (rater_id = auth.uid());
