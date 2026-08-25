@@ -46,6 +46,11 @@ Browse your ranking as a Flow, auto-collections, a Top-16 bracket, and share car
 - **Pass the phone**: a friend plays ten cards on your settled photos —
   "Do we agree?" or "Do you know me?" — with an agreement score, the photos
   you disagree on, and a share card. Their answers never touch your ranking.
+- **Arena** (opt-in, online): enter one photo a day, rate other people's,
+  watch the live global board and private rooms, keep a history of finishes.
+  Backed by Supabase (`supabase/`); configured with
+  `--dart-define=SUPABASE_URL=… --dart-define=SUPABASE_ANON_KEY=…`. Debug
+  builds without keys use an in-memory fake with bot players.
 - **Beats** (`lib/core/beats`) keep play fresh: every 20–35 decisions a short
   in-play moment appears — your Top 3, a climber, a head-to-head to settle, a
   deep cut, a themed 10-card deck — plus majors on milestones, a new #1, the
@@ -134,6 +139,8 @@ lib/data/media     LibraryScanner (photo_manager), ThumbCache
 lib/core/bracket   single-elimination bracket model
 lib/core/stats     levels and badges
 lib/core/guest     pass-the-phone game and scoring
-lib/features       play/, beats/, bracket/, browse/, guest/, share/, widget/, ranking/, settings/, onboarding/, shell/
+lib/data/arena     Arena API (Supabase + fake), models, upload preparation
+supabase/          Arena schema, SQL Glicko, pairing, leaderboards, RLS
+lib/features       play/, beats/, bracket/, browse/, guest/, arena/, share/, widget/, ranking/, settings/, onboarding/, shell/
 android/app/src/main/kotlin/.../DuelWidgetProvider.kt   home-screen widget
 ```

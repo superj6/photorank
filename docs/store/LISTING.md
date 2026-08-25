@@ -32,10 +32,19 @@ ever deleted, moved or hidden. The bottom of the ranking is just the bottom.
 **Privacy policy URL:** https://github.com/superj6/photorank/blob/main/docs/PRIVACY.md
 
 ## Data safety form (answers)
-- Does your app collect or share any of the required user data types? **No**
-- Photos and videos are *accessed on-device* but not collected or transmitted.
-- Is data encrypted in transit? N/A (no transmission)
-- Can users request deletion? N/A (uninstalling removes all data)
+Without Arena enabled in the build: no data collected or shared.
+With Arena (online mode):
+- Collected: **Photos** (user-initiated, optional — the one daily entry),
+  **User IDs** (anonymous account), **App interactions** (duel choices).
+  Purpose: app functionality. Not shared with third parties.
+- Encrypted in transit: **Yes** (HTTPS). Users can request deletion: **Yes**
+  (withdraw entries in-app; account deletion on request).
+- Photos and videos on the device are otherwise accessed on-device only.
+
+## User-generated content (Play policy)
+Arena shows photos uploaded by users. The app has in-app **report** and
+**block**, reported content is auto-hidden after 3 reports pending review,
+and the consent sheet states the rules and the 13+ requirement.
 
 ## Content rating questionnaire
 - No violence, sexual content, profanity, gambling, or user-generated content
