@@ -37,7 +37,7 @@ phone; only ratings are stored.
   decisions). Every beat is kept under Ranking → Moments and the big ones are
   shareable. Debug builds have "fire a beat" chips in Settings.
 
-Design doc / roadmap: `~/.claude/plans/i-want-to-make-mossy-willow.md`.
+Design doc / roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Dev setup (Linux)
 
