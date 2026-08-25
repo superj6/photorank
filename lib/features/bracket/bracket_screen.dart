@@ -126,7 +126,7 @@ class _BracketScreenState extends ConsumerState<BracketScreen> {
                       child: Text('Rank at least 8 photos to play a bracket.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60)),
                     ),
                   )
-                : b!.finished || s.showOverview
+                : b!.finished || s.showOverview || b.nextMatch == null
                     ? _Overview(bracket: b, mediaOf: mediaOf, onNext: ctl.nextRound)
                     : Column(
                         children: [

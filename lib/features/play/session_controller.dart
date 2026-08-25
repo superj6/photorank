@@ -22,7 +22,7 @@ import '../../data/db/database.dart';
 import '../../data/repo/beat_repo.dart';
 import '../widget/duel_widget.dart';
 
-enum SessionStatus { idle, loading, playing, finished, empty }
+enum SessionStatus { idle, loading, playing, finishing, finished, empty }
 
 class SessionSummary {
   const SessionSummary({
@@ -290,13 +290,13 @@ class SessionController extends Notifier<SessionState> {
     }
     final previous = _decisions;
     _decisions++;
-    final changes = _track(delta, card);
+    final changes = _track(delta, card, winner: card.mode == GameMode.bestOfBurst ? obs.first.subjectId : null);
     _advance(true);
     await _maybeBeat(previous, changes);
   }
 
   /// Update incremental stats from one card's rating delta; report changes.
-  StateChanges _track(RatingDelta delta, Card card) {
+  StateChanges _track(RatingDelta delta, Card card, {int? winner}) {
     int? newTop;
     int? previousTop;
     final settledBefore = _settled;
@@ -328,7 +328,7 @@ class SessionController extends Notifier<SessionState> {
       previousTopId: previousTop,
       settledCrossed: crossed,
       unlocked: _unlockAll ? const [] : Unlocks.newlyUnlocked(_decisions - 1, _decisions),
-      burstWinner: card.mode == GameMode.bestOfBurst ? card.photoIds.first : null,
+      burstWinner: card.mode == GameMode.bestOfBurst ? winner : null,
       burstSiblings: card.mode == GameMode.bestOfBurst ? card.photoIds : const [],
     );
   }
@@ -527,9 +527,21 @@ class SessionController extends Notifier<SessionState> {
 
   void _advance(bool answered) {
     final next = state.index + 1;
-    state = state.copyWith(index: next, answered: [...state.answered, answered], busy: false, decisions: _decisions);
-    if (next >= state.hand.length) _finish();
+    final over = next >= state.hand.length;
+    // Past the last card there is no `current`; show a finishing state until the summary is ready.
+    state = state.copyWith(
+      index: next,
+      answered: [...state.answered, answered],
+      busy: false,
+      decisions: _decisions,
+      status: over ? SessionStatus.finishing : state.status,
+    );
+    if (over) _finish();
   }
+
+  /// Answers only count for the card they were made on: a pick animation can
+  /// complete after Pass/Undo moved the hand on.
+  bool _stale(int? cardIndex) => cardIndex != null && cardIndex != state.index;
 
   Future<void> undo() async {
     if (!state.canUndo) return;
@@ -614,8 +626,9 @@ class SessionController extends Notifier<SessionState> {
 
   // ---- per-mode answers ---------------------------------------------------
 
-  Future<void> answerDuel(int winnerId) {
-    final c = state.current!;
+  Future<void> answerDuel(int winnerId, {int? cardIndex}) async {
+    final c = state.current;
+    if (c == null || _stale(cardIndex) || !c.photoIds.contains(winnerId)) return;
     final loser = c.photoIds.firstWhere((id) => id != winnerId);
     return _apply(Decompose.duel(
       axisId: _axis,
@@ -627,37 +640,29 @@ class SessionController extends Notifier<SessionState> {
     ));
   }
 
-  Future<void> answerVibe(bool feelingIt) => _apply(Decompose.vibe(
-        axisId: _axis,
-        cardId: _cardId(state.index),
-        photoId: state.current!.photoIds.single,
-        feelingIt: feelingIt,
-        now: DateTime.now(),
-      ));
+  Future<void> answerVibe(bool feelingIt, {int? cardIndex}) async {
+    final c = state.current;
+    if (c == null || _stale(cardIndex) || c.photoIds.length != 1) return;
+    return _apply(Decompose.vibe(axisId: _axis, cardId: _cardId(state.index), photoId: c.photoIds.single, feelingIt: feelingIt, now: DateTime.now()));
+  }
 
-  Future<void> answerRate(int stars) => _apply(Decompose.rate(
-        axisId: _axis,
-        cardId: _cardId(state.index),
-        photoId: state.current!.photoIds.single,
-        stars: stars,
-        now: DateTime.now(),
-      ));
+  Future<void> answerRate(int stars, {int? cardIndex}) async {
+    final c = state.current;
+    if (c == null || _stale(cardIndex) || c.photoIds.length != 1) return;
+    return _apply(Decompose.rate(axisId: _axis, cardId: _cardId(state.index), photoId: c.photoIds.single, stars: stars, now: DateTime.now()));
+  }
 
-  Future<void> answerBurst(int winnerId) => _apply(Decompose.burst(
-        axisId: _axis,
-        cardId: _cardId(state.index),
-        winnerId: winnerId,
-        siblingIds: state.current!.photoIds,
-        now: DateTime.now(),
-      ));
+  Future<void> answerBurst(int winnerId, {int? cardIndex}) async {
+    final c = state.current;
+    if (c == null || _stale(cardIndex) || !c.photoIds.contains(winnerId)) return;
+    return _apply(Decompose.burst(axisId: _axis, cardId: _cardId(state.index), winnerId: winnerId, siblingIds: c.photoIds, now: DateTime.now()));
+  }
 
-  Future<void> answerSort(List<int> orderedIds) => _apply(Decompose.sort(
-        axisId: _axis,
-        cardId: _cardId(state.index),
-        orderedIds: orderedIds,
-        mode: state.current!.mode,
-        now: DateTime.now(),
-      ));
+  Future<void> answerSort(List<int> orderedIds, {int? cardIndex}) async {
+    final c = state.current;
+    if (c == null || _stale(cardIndex) || orderedIds.toSet().length != c.photoIds.length || !c.photoIds.toSet().containsAll(orderedIds)) return;
+    return _apply(Decompose.sort(axisId: _axis, cardId: _cardId(state.index), orderedIds: orderedIds, mode: c.mode, now: DateTime.now()));
+  }
 }
 
 final sessionProvider = NotifierProvider<SessionController, SessionState>(SessionController.new);

@@ -59,7 +59,16 @@ List<Moment> collapseMoments(List<PhotoState> rankedBestFirst, {Map<int, String>
     if (!members.containsKey(key)) order.add(key);
     members.putIfAbsent(key, () => []).add(s);
   }
-  return [for (final key in order) Moment(best: members[key]!.first, similar: members[key]!.sublist(1))];
+  // The face of a moment is its best *unshadowed* member: a burst keeper you
+  // chose wins over a sibling that happens to score higher.
+  return [
+    for (final key in order)
+      () {
+        final list = members[key]!;
+        final face = list.firstWhere((p) => p.shadowedBy == null, orElse: () => list.first);
+        return Moment(best: face, similar: [for (final p in list) if (p != face) p]);
+      }(),
+  ];
 }
 
 /// Best-first list with one photo per moment — for Top N, shares, seeding.

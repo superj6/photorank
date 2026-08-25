@@ -63,10 +63,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     return Scaffold(
       body: SafeArea(
         child: switch (s.status) {
-          SessionStatus.idle || SessionStatus.loading =>
+          SessionStatus.idle || SessionStatus.loading || SessionStatus.finishing =>
             const Center(child: CircularProgressIndicator()),
           SessionStatus.empty => _Empty(onRescan: () => context.go('/settings')),
           SessionStatus.finished => SummaryView(summary: s.summary!, onAgain: ctl.start),
+          SessionStatus.playing when s.current == null => const Center(child: CircularProgressIndicator()),
           SessionStatus.playing => Column(
               children: [
                 _Header(state: s, onUndo: ctl.undo, onPass: ctl.pass),
@@ -105,6 +106,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
 
   Widget _card(SessionState s, SessionController ctl) {
     final c = s.current!;
+    final idx = s.index;
     // First two cards ever: teach the two gestures that are not obvious.
     final firstTime = s.decisions < 2 && s.index < 2;
     switch (c.mode) {
@@ -116,28 +118,28 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
           mediaOf: s.mediaOf,
           fitOf: s.fitOf,
           challenger: c.mode == GameMode.challenger,
-          onPick: ctl.answerDuel,
+          onPick: (id) => ctl.answerDuel(id, cardIndex: idx),
           hint: firstTime ? const Pill('Tap to pick · hold to look closer', icon: Icons.touch_app_rounded) : null,
         );
       case GameMode.vibeCheck:
         return VibeCard(
           mediaId: s.mediaOf(c.photoIds.single),
           fit: s.fitOf(c.photoIds.single),
-          onAnswer: ctl.answerVibe,
+          onAnswer: (v) => ctl.answerVibe(v, cardIndex: idx),
           hint: firstTime ? const Pill('Swipe · tap to view full screen', icon: Icons.swipe_rounded) : null,
         );
       case GameMode.rate:
         return RateCard(
           mediaId: s.mediaOf(c.photoIds.single),
           fit: s.fitOf(c.photoIds.single),
-          onRate: ctl.answerRate,
+          onRate: (n) => ctl.answerRate(n, cardIndex: idx),
           hint: firstTime ? const Pill('Double-tap for 5★ · tap to view', icon: Icons.star_rounded) : null,
         );
       case GameMode.bestOfBurst:
-        return BurstCard(ids: c.photoIds, mediaOf: s.mediaOf, onPick: ctl.answerBurst);
+        return BurstCard(ids: c.photoIds, mediaOf: s.mediaOf, onPick: (id) => ctl.answerBurst(id, cardIndex: idx));
       case GameMode.sort3:
       case GameMode.rerankTop:
-        return SortCard(ids: c.photoIds, mediaOf: s.mediaOf, fitOf: s.fitOf, onSorted: ctl.answerSort);
+        return SortCard(ids: c.photoIds, mediaOf: s.mediaOf, fitOf: s.fitOf, onSorted: (ids) => ctl.answerSort(ids, cardIndex: idx));
       case GameMode.browseHeart:
         return const SizedBox.shrink();
     }
@@ -153,7 +155,7 @@ class _Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mode = state.current!.mode;
+    final mode = state.current?.mode ?? GameMode.duel;
     final axis = ref.watch(currentAxisProvider).value;
     final axisLabel = axis == null || axis.isDefault ? '' : '${axis.name} · ';
     return Padding(

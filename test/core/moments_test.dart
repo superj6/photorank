@@ -4,6 +4,7 @@ import 'package:photorank/core/rating/glicko.dart';
 import 'package:photorank/core/sampler/moments.dart';
 
 void main() {
+  shadowTests();
   final t0 = DateTime(2026, 6, 1, 19, 0);
   PhotoState p(int id, {int minutes = 0, int seconds = 0, double mu = 1700, int? cluster}) =>
       PhotoState(id: id, rating: Rating(mu: mu, rd: 40), observations: 3, takenAt: t0.add(Duration(minutes: minutes, seconds: seconds)), clusterId: cluster);
@@ -43,5 +44,18 @@ void main() {
       PhotoState(id: 2, rating: const Rating(mu: 1690, rd: 40), observations: 1),
     ];
     expect(collapseMoments(states).length, 2);
+  });
+}
+
+void shadowTests() {
+  test('a chosen burst keeper fronts its moment even if a sibling scores higher', () {
+    final t0 = DateTime(2026, 6, 1, 19);
+    final states = [
+      PhotoState(id: 1, rating: const Rating(mu: 1790, rd: 40), observations: 3, takenAt: t0, clusterId: 7, shadowedBy: 2),
+      PhotoState(id: 2, rating: const Rating(mu: 1760, rd: 40), observations: 3, takenAt: t0.add(const Duration(seconds: 3)), clusterId: 7),
+    ];
+    final m = collapseMoments(states).single;
+    expect(m.best.id, 2);
+    expect(m.similar.map((p) => p.id), [1]);
   });
 }

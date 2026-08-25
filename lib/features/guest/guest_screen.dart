@@ -124,7 +124,8 @@ class _GuestScreenState extends ConsumerState<GuestScreen> {
   }
 
   Widget _play(GuestState s, GuestController ctl) {
-    final c = s.current!;
+    final c = s.current;
+    if (c == null) return const Center(child: CircularProgressIndicator());
     final guess = s.mode == GuestMode.guess;
     return Column(
       children: [
