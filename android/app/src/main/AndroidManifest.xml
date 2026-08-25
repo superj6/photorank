@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Android 13+ scoped photo access; legacy storage read for 12 and below. -->
     <uses-permission
         android:name="android.permission.READ_MEDIA_IMAGES"/>
