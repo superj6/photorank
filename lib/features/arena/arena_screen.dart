@@ -74,12 +74,26 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
                         children: [
                           Text('Leaderboard', style: Theme.of(context).textTheme.titleLarge),
                           const Spacer(),
-                          Text('${s.board.length} photos · ${today.day}/${today.month} UTC', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          SegmentedButton<String>(
+                            style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                            segments: const [ButtonSegment(value: 'global', label: Text('All')), ButtonSegment(value: 'friends', label: Text('Friends'))],
+                            selected: {s.scope},
+                            onSelectionChanged: (v) => ctl.setScope(v.first),
+                          ),
                         ],
                       ),
+                      const SizedBox(height: 4),
+                      Text('${s.board.length} photos · ${today.day}/${today.month} UTC', style: const TextStyle(color: Colors.white54, fontSize: 12)),
                       const SizedBox(height: 8),
                       if (s.board.isEmpty)
-                        const Padding(padding: EdgeInsets.all(24), child: Text('No photos yet today. Be the first.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60)))
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            s.scope == 'friends' ? 'No friends have entered today. Long-press a photo on the board to follow someone.' : 'No photos yet today. Be the first.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white60),
+                          ),
+                        )
                       else
                         for (final row in s.board) _BoardTile(row: row, ctl: ctl).animate(delay: (row.rank.clamp(0, 12) * 30).ms).fadeIn(),
                     ],
@@ -289,12 +303,16 @@ class _BoardTile extends StatelessWidget {
       backgroundColor: AppTheme.surface,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(leading: const Icon(Icons.person_add_alt_1_rounded), title: Text('Follow ${row.name}'), onTap: () => Navigator.pop(ctx, 'follow')),
           ListTile(leading: const Icon(Icons.flag_outlined), title: const Text('Report this photo'), onTap: () => Navigator.pop(ctx, 'report')),
           ListTile(leading: const Icon(Icons.block), title: Text('Block ${row.name}'), onTap: () => Navigator.pop(ctx, 'block')),
         ]),
       ),
     );
-    if (action == 'report') {
+    if (action == 'follow') {
+      await ctl.follow(row.userId);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Following ${row.name}. Use the Friends filter to see them.')));
+    } else if (action == 'report') {
       await ctl.report(row.entryId);
       if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reported. Thanks — we review these.')));
     } else if (action == 'block') {

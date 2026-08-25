@@ -33,6 +33,7 @@ class ArenaState {
     this.error,
     this.consent = false,
     this.busy = false,
+    this.scope = 'global',
   });
 
   final ArenaProfile? profile;
@@ -45,6 +46,9 @@ class ArenaState {
   final String? error;
   final bool consent;
   final bool busy;
+
+  /// 'global' or 'friends' (people you follow + you).
+  final String scope;
 
   bool get canPlay => board.length >= 2 && duelsToday < ArenaConfig.maxDuelsPerDay;
   Room? get room => rooms.where((r) => r.id == roomId).firstOrNull;
@@ -63,6 +67,7 @@ class ArenaState {
     bool clearError = false,
     bool? consent,
     bool? busy,
+    String? scope,
   }) =>
       ArenaState(
         profile: profile ?? this.profile,
@@ -75,6 +80,7 @@ class ArenaState {
         error: clearError ? null : (error ?? this.error),
         consent: consent ?? this.consent,
         busy: busy ?? this.busy,
+        scope: scope ?? this.scope,
       );
 }
 
@@ -107,12 +113,22 @@ class ArenaController extends Notifier<ArenaState> {
     if (api == null) return;
     try {
       final entry = await api.myEntry(roomId: state.roomId);
-      final board = await api.leaderboard(roomId: state.roomId);
+      final board = await api.leaderboard(roomId: state.roomId, scope: state.scope);
       final duels = await api.myDuelsToday(roomId: state.roomId);
       state = state.copyWith(myEntry: entry, clearEntry: entry == null, board: board, duelsToday: duels, loading: false, clearError: true);
     } catch (e) {
       state = state.copyWith(loading: false, error: _msg(e));
     }
+  }
+
+  Future<void> setScope(String scope) async {
+    state = state.copyWith(scope: scope, loading: true);
+    await refresh();
+  }
+
+  Future<void> follow(String userId, {bool unfollow = false}) async {
+    await (await _api)?.follow(userId, unfollow: unfollow);
+    if (state.scope == 'friends') await refresh();
   }
 
   Future<void> selectRoom(String? roomId) async {
