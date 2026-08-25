@@ -40,7 +40,10 @@ class FakeArenaApi implements ArenaApi {
     _entries.add(_E(id: 'me-${roomId ?? 'g'}', userId: 'me', path: 'me/today.jpg', roomId: roomId));
   }
 
+  bool _setDone = false;
+
   int _required(String? roomId) {
+    if (_setDone) return _duelsToday;
     final n = _pool(roomId).where((e) => e.userId != 'me').length;
     return (n * (n - 1) ~/ 2).clamp(0, 10);
   }
@@ -49,10 +52,10 @@ class FakeArenaApi implements ArenaApi {
   Future<ArenaStatus> status({String? roomId}) async {
     final has = _pool(roomId).any((e) => e.userId == 'me');
     final req = _required(roomId);
-    return ArenaStatus(hasEntry: has, duelsToday: _duelsToday, required: req, unlocked: has && _duelsToday >= req, others: _pool(roomId).where((e) => e.userId != 'me').length);
+    return ArenaStatus(hasEntry: has, duelsToday: _duelsToday, required: req, unlocked: has && (_setDone || _duelsToday >= req), others: _pool(roomId).where((e) => e.userId != 'me').length);
   }
 
-  bool _unlocked(String? roomId) => _pool(roomId).any((e) => e.userId == 'me') && _duelsToday >= _required(roomId);
+  bool _unlocked(String? roomId) => _pool(roomId).any((e) => e.userId == 'me') && (_setDone || _duelsToday >= _required(roomId));
 
   List<BoardRow> _board(String? roomId) {
     final pool = _pool(roomId)..sort((a, b) {
@@ -122,7 +125,7 @@ class FakeArenaApi implements ArenaApi {
     final b = _entries.firstWhere((e) => e.id == bId);
     if (a.userId == 'me' || b.userId == 'me') throw StateError('cannot rate your own photo');
     if (!_pool(a.roomId).any((e) => e.userId == 'me')) throw StateError('enter a photo first');
-    if (_duelsToday >= 10) throw StateError('you have rated your set for today');
+    if (_setDone) throw StateError('you have rated your set for today');
     if (!_rated.add(_key(aId, bId))) throw StateError('pair already rated');
     final (na, nb) = Glicko.updatePair(Rating(mu: a.mu, rd: a.rd), Rating(mu: b.mu, rd: b.rd), winnerId == aId ? Outcome.win : Outcome.loss);
     a
@@ -136,6 +139,7 @@ class FakeArenaApi implements ArenaApi {
       ..duels += 1
       ..wins += winnerId == bId ? 1 : 0;
     _duelsToday++;
+    if (_duelsToday >= _required(a.roomId)) _setDone = true;
   }
 
   @override

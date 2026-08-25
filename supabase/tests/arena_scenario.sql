@@ -87,7 +87,7 @@ begin
     perform public.record_duel(p.a_id, p.b_id, p.a_id);
     raise exception 'FAIL: repeated pair allowed';
   exception when others then
-    if sqlerrm like '%already rated%' then raise notice 'ok: repeated pair rejected'; else raise; end if;
+    if sqlerrm like '%already rated%' or sqlerrm like '%rated your set%' then raise notice 'ok: repeated pair rejected'; else raise; end if;
   end;
   select * into s from public.arena_status(null);
   if not s.unlocked then raise exception 'FAIL: still locked after rating the set'; end if;
@@ -97,6 +97,27 @@ begin
   raise notice 'ok: rated pair not offered again';
 end $$;
 select rank, duels, settled, total from public.my_entry(public.arena_today(), null);
+
+-- Sticky unlock: a fourth entrant raises required_duels, but user 3 keeps the board and cannot rate more.
+select pg_temp.as_user(4);
+select (public.submit_entry(null, pg_temp.uid(4)::text || '/a.jpg', now())).id is not null as u4_submitted;
+select pg_temp.as_user(3);
+do $$
+declare s record; p record;
+begin
+  select * into s from public.arena_status(null);
+  if not s.unlocked then raise exception 'FAIL: board re-locked after new entrant'; end if;
+  raise notice 'ok: board stays open after more entrants (required now %, rated %)', s.required, s.duels_today;
+  select * into p from public.next_pairs(null, 1);
+  if p.a_id is not null then
+    begin
+      perform public.record_duel(p.a_id, p.b_id, p.a_id);
+      raise exception 'FAIL: rated beyond the set';
+    exception when others then
+      if sqlerrm like '%rated your set%' then raise notice 'ok: no rating beyond the set'; else raise; end if;
+    end;
+  end if;
+end $$;
 
 -- Self-rating rejected.
 select pg_temp.as_user(1);
