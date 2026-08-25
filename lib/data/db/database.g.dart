@@ -3384,6 +3384,885 @@ class PrefsCompanion extends UpdateCompanion<PrefRow> {
   }
 }
 
+class $BeatsTable extends Beats with TableInfo<$BeatsTable, BeatRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BeatsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _decisionCountMeta = const VerificationMeta(
+    'decisionCount',
+  );
+  @override
+  late final GeneratedColumn<int> decisionCount = GeneratedColumn<int>(
+    'decision_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seenAtMeta = const VerificationMeta('seenAt');
+  @override
+  late final GeneratedColumn<DateTime> seenAt = GeneratedColumn<DateTime>(
+    'seen_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharedAtMeta = const VerificationMeta(
+    'sharedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> sharedAt = GeneratedColumn<DateTime>(
+    'shared_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    kind,
+    decisionCount,
+    createdAt,
+    payloadJson,
+    seenAt,
+    sharedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'beats';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BeatRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('decision_count')) {
+      context.handle(
+        _decisionCountMeta,
+        decisionCount.isAcceptableOrUnknown(
+          data['decision_count']!,
+          _decisionCountMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_decisionCountMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('seen_at')) {
+      context.handle(
+        _seenAtMeta,
+        seenAt.isAcceptableOrUnknown(data['seen_at']!, _seenAtMeta),
+      );
+    }
+    if (data.containsKey('shared_at')) {
+      context.handle(
+        _sharedAtMeta,
+        sharedAt.isAcceptableOrUnknown(data['shared_at']!, _sharedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BeatRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BeatRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      decisionCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}decision_count'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      seenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}seen_at'],
+      ),
+      sharedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}shared_at'],
+      ),
+    );
+  }
+
+  @override
+  $BeatsTable createAlias(String alias) {
+    return $BeatsTable(attachedDatabase, alias);
+  }
+}
+
+class BeatRow extends DataClass implements Insertable<BeatRow> {
+  final int id;
+  final String kind;
+  final int decisionCount;
+  final DateTime createdAt;
+  final String payloadJson;
+  final DateTime? seenAt;
+  final DateTime? sharedAt;
+  const BeatRow({
+    required this.id,
+    required this.kind,
+    required this.decisionCount,
+    required this.createdAt,
+    required this.payloadJson,
+    this.seenAt,
+    this.sharedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['kind'] = Variable<String>(kind);
+    map['decision_count'] = Variable<int>(decisionCount);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['payload_json'] = Variable<String>(payloadJson);
+    if (!nullToAbsent || seenAt != null) {
+      map['seen_at'] = Variable<DateTime>(seenAt);
+    }
+    if (!nullToAbsent || sharedAt != null) {
+      map['shared_at'] = Variable<DateTime>(sharedAt);
+    }
+    return map;
+  }
+
+  BeatsCompanion toCompanion(bool nullToAbsent) {
+    return BeatsCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      decisionCount: Value(decisionCount),
+      createdAt: Value(createdAt),
+      payloadJson: Value(payloadJson),
+      seenAt: seenAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seenAt),
+      sharedAt: sharedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharedAt),
+    );
+  }
+
+  factory BeatRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BeatRow(
+      id: serializer.fromJson<int>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      decisionCount: serializer.fromJson<int>(json['decisionCount']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      seenAt: serializer.fromJson<DateTime?>(json['seenAt']),
+      sharedAt: serializer.fromJson<DateTime?>(json['sharedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'kind': serializer.toJson<String>(kind),
+      'decisionCount': serializer.toJson<int>(decisionCount),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'seenAt': serializer.toJson<DateTime?>(seenAt),
+      'sharedAt': serializer.toJson<DateTime?>(sharedAt),
+    };
+  }
+
+  BeatRow copyWith({
+    int? id,
+    String? kind,
+    int? decisionCount,
+    DateTime? createdAt,
+    String? payloadJson,
+    Value<DateTime?> seenAt = const Value.absent(),
+    Value<DateTime?> sharedAt = const Value.absent(),
+  }) => BeatRow(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    decisionCount: decisionCount ?? this.decisionCount,
+    createdAt: createdAt ?? this.createdAt,
+    payloadJson: payloadJson ?? this.payloadJson,
+    seenAt: seenAt.present ? seenAt.value : this.seenAt,
+    sharedAt: sharedAt.present ? sharedAt.value : this.sharedAt,
+  );
+  BeatRow copyWithCompanion(BeatsCompanion data) {
+    return BeatRow(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      decisionCount: data.decisionCount.present
+          ? data.decisionCount.value
+          : this.decisionCount,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      seenAt: data.seenAt.present ? data.seenAt.value : this.seenAt,
+      sharedAt: data.sharedAt.present ? data.sharedAt.value : this.sharedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BeatRow(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('decisionCount: $decisionCount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('seenAt: $seenAt, ')
+          ..write('sharedAt: $sharedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    kind,
+    decisionCount,
+    createdAt,
+    payloadJson,
+    seenAt,
+    sharedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BeatRow &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.decisionCount == this.decisionCount &&
+          other.createdAt == this.createdAt &&
+          other.payloadJson == this.payloadJson &&
+          other.seenAt == this.seenAt &&
+          other.sharedAt == this.sharedAt);
+}
+
+class BeatsCompanion extends UpdateCompanion<BeatRow> {
+  final Value<int> id;
+  final Value<String> kind;
+  final Value<int> decisionCount;
+  final Value<DateTime> createdAt;
+  final Value<String> payloadJson;
+  final Value<DateTime?> seenAt;
+  final Value<DateTime?> sharedAt;
+  const BeatsCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.decisionCount = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.seenAt = const Value.absent(),
+    this.sharedAt = const Value.absent(),
+  });
+  BeatsCompanion.insert({
+    this.id = const Value.absent(),
+    required String kind,
+    required int decisionCount,
+    required DateTime createdAt,
+    required String payloadJson,
+    this.seenAt = const Value.absent(),
+    this.sharedAt = const Value.absent(),
+  }) : kind = Value(kind),
+       decisionCount = Value(decisionCount),
+       createdAt = Value(createdAt),
+       payloadJson = Value(payloadJson);
+  static Insertable<BeatRow> custom({
+    Expression<int>? id,
+    Expression<String>? kind,
+    Expression<int>? decisionCount,
+    Expression<DateTime>? createdAt,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? seenAt,
+    Expression<DateTime>? sharedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (decisionCount != null) 'decision_count': decisionCount,
+      if (createdAt != null) 'created_at': createdAt,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (seenAt != null) 'seen_at': seenAt,
+      if (sharedAt != null) 'shared_at': sharedAt,
+    });
+  }
+
+  BeatsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? kind,
+    Value<int>? decisionCount,
+    Value<DateTime>? createdAt,
+    Value<String>? payloadJson,
+    Value<DateTime?>? seenAt,
+    Value<DateTime?>? sharedAt,
+  }) {
+    return BeatsCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      decisionCount: decisionCount ?? this.decisionCount,
+      createdAt: createdAt ?? this.createdAt,
+      payloadJson: payloadJson ?? this.payloadJson,
+      seenAt: seenAt ?? this.seenAt,
+      sharedAt: sharedAt ?? this.sharedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (decisionCount.present) {
+      map['decision_count'] = Variable<int>(decisionCount.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (seenAt.present) {
+      map['seen_at'] = Variable<DateTime>(seenAt.value);
+    }
+    if (sharedAt.present) {
+      map['shared_at'] = Variable<DateTime>(sharedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BeatsCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('decisionCount: $decisionCount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('seenAt: $seenAt, ')
+          ..write('sharedAt: $sharedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DailySnapshotsTable extends DailySnapshots
+    with TableInfo<$DailySnapshotsTable, DailySnapshotRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DailySnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _photosMeta = const VerificationMeta('photos');
+  @override
+  late final GeneratedColumn<int> photos = GeneratedColumn<int>(
+    'photos',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _settledMeta = const VerificationMeta(
+    'settled',
+  );
+  @override
+  late final GeneratedColumn<int> settled = GeneratedColumn<int>(
+    'settled',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observationsMeta = const VerificationMeta(
+    'observations',
+  );
+  @override
+  late final GeneratedColumn<int> observations = GeneratedColumn<int>(
+    'observations',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _top10JsonMeta = const VerificationMeta(
+    'top10Json',
+  );
+  @override
+  late final GeneratedColumn<String> top10Json = GeneratedColumn<String>(
+    'top10_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    day,
+    photos,
+    settled,
+    observations,
+    top10Json,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'daily_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DailySnapshotRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('photos')) {
+      context.handle(
+        _photosMeta,
+        photos.isAcceptableOrUnknown(data['photos']!, _photosMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_photosMeta);
+    }
+    if (data.containsKey('settled')) {
+      context.handle(
+        _settledMeta,
+        settled.isAcceptableOrUnknown(data['settled']!, _settledMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_settledMeta);
+    }
+    if (data.containsKey('observations')) {
+      context.handle(
+        _observationsMeta,
+        observations.isAcceptableOrUnknown(
+          data['observations']!,
+          _observationsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_observationsMeta);
+    }
+    if (data.containsKey('top10_json')) {
+      context.handle(
+        _top10JsonMeta,
+        top10Json.isAcceptableOrUnknown(data['top10_json']!, _top10JsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_top10JsonMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {day};
+  @override
+  DailySnapshotRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DailySnapshotRow(
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day'],
+      )!,
+      photos: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}photos'],
+      )!,
+      settled: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}settled'],
+      )!,
+      observations: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}observations'],
+      )!,
+      top10Json: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}top10_json'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $DailySnapshotsTable createAlias(String alias) {
+    return $DailySnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class DailySnapshotRow extends DataClass
+    implements Insertable<DailySnapshotRow> {
+  /// yyyy-mm-dd in local time.
+  final String day;
+  final int photos;
+  final int settled;
+  final int observations;
+  final String top10Json;
+  final DateTime createdAt;
+  const DailySnapshotRow({
+    required this.day,
+    required this.photos,
+    required this.settled,
+    required this.observations,
+    required this.top10Json,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['day'] = Variable<String>(day);
+    map['photos'] = Variable<int>(photos);
+    map['settled'] = Variable<int>(settled);
+    map['observations'] = Variable<int>(observations);
+    map['top10_json'] = Variable<String>(top10Json);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  DailySnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return DailySnapshotsCompanion(
+      day: Value(day),
+      photos: Value(photos),
+      settled: Value(settled),
+      observations: Value(observations),
+      top10Json: Value(top10Json),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory DailySnapshotRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DailySnapshotRow(
+      day: serializer.fromJson<String>(json['day']),
+      photos: serializer.fromJson<int>(json['photos']),
+      settled: serializer.fromJson<int>(json['settled']),
+      observations: serializer.fromJson<int>(json['observations']),
+      top10Json: serializer.fromJson<String>(json['top10Json']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'day': serializer.toJson<String>(day),
+      'photos': serializer.toJson<int>(photos),
+      'settled': serializer.toJson<int>(settled),
+      'observations': serializer.toJson<int>(observations),
+      'top10Json': serializer.toJson<String>(top10Json),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  DailySnapshotRow copyWith({
+    String? day,
+    int? photos,
+    int? settled,
+    int? observations,
+    String? top10Json,
+    DateTime? createdAt,
+  }) => DailySnapshotRow(
+    day: day ?? this.day,
+    photos: photos ?? this.photos,
+    settled: settled ?? this.settled,
+    observations: observations ?? this.observations,
+    top10Json: top10Json ?? this.top10Json,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  DailySnapshotRow copyWithCompanion(DailySnapshotsCompanion data) {
+    return DailySnapshotRow(
+      day: data.day.present ? data.day.value : this.day,
+      photos: data.photos.present ? data.photos.value : this.photos,
+      settled: data.settled.present ? data.settled.value : this.settled,
+      observations: data.observations.present
+          ? data.observations.value
+          : this.observations,
+      top10Json: data.top10Json.present ? data.top10Json.value : this.top10Json,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailySnapshotRow(')
+          ..write('day: $day, ')
+          ..write('photos: $photos, ')
+          ..write('settled: $settled, ')
+          ..write('observations: $observations, ')
+          ..write('top10Json: $top10Json, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(day, photos, settled, observations, top10Json, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DailySnapshotRow &&
+          other.day == this.day &&
+          other.photos == this.photos &&
+          other.settled == this.settled &&
+          other.observations == this.observations &&
+          other.top10Json == this.top10Json &&
+          other.createdAt == this.createdAt);
+}
+
+class DailySnapshotsCompanion extends UpdateCompanion<DailySnapshotRow> {
+  final Value<String> day;
+  final Value<int> photos;
+  final Value<int> settled;
+  final Value<int> observations;
+  final Value<String> top10Json;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const DailySnapshotsCompanion({
+    this.day = const Value.absent(),
+    this.photos = const Value.absent(),
+    this.settled = const Value.absent(),
+    this.observations = const Value.absent(),
+    this.top10Json = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DailySnapshotsCompanion.insert({
+    required String day,
+    required int photos,
+    required int settled,
+    required int observations,
+    required String top10Json,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : day = Value(day),
+       photos = Value(photos),
+       settled = Value(settled),
+       observations = Value(observations),
+       top10Json = Value(top10Json),
+       createdAt = Value(createdAt);
+  static Insertable<DailySnapshotRow> custom({
+    Expression<String>? day,
+    Expression<int>? photos,
+    Expression<int>? settled,
+    Expression<int>? observations,
+    Expression<String>? top10Json,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (day != null) 'day': day,
+      if (photos != null) 'photos': photos,
+      if (settled != null) 'settled': settled,
+      if (observations != null) 'observations': observations,
+      if (top10Json != null) 'top10_json': top10Json,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DailySnapshotsCompanion copyWith({
+    Value<String>? day,
+    Value<int>? photos,
+    Value<int>? settled,
+    Value<int>? observations,
+    Value<String>? top10Json,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return DailySnapshotsCompanion(
+      day: day ?? this.day,
+      photos: photos ?? this.photos,
+      settled: settled ?? this.settled,
+      observations: observations ?? this.observations,
+      top10Json: top10Json ?? this.top10Json,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (photos.present) {
+      map['photos'] = Variable<int>(photos.value);
+    }
+    if (settled.present) {
+      map['settled'] = Variable<int>(settled.value);
+    }
+    if (observations.present) {
+      map['observations'] = Variable<int>(observations.value);
+    }
+    if (top10Json.present) {
+      map['top10_json'] = Variable<String>(top10Json.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailySnapshotsCompanion(')
+          ..write('day: $day, ')
+          ..write('photos: $photos, ')
+          ..write('settled: $settled, ')
+          ..write('observations: $observations, ')
+          ..write('top10Json: $top10Json, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3395,6 +4274,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ObservationsTable observations = $ObservationsTable(this);
   late final $ViewsTable views = $ViewsTable(this);
   late final $PrefsTable prefs = $PrefsTable(this);
+  late final $BeatsTable beats = $BeatsTable(this);
+  late final $DailySnapshotsTable dailySnapshots = $DailySnapshotsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3408,6 +4289,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     observations,
     views,
     prefs,
+    beats,
+    dailySnapshots,
   ];
 }
 
@@ -6731,6 +7614,460 @@ typedef $$PrefsTableProcessedTableManager =
       PrefRow,
       PrefetchHooks Function()
     >;
+typedef $$BeatsTableCreateCompanionBuilder = BeatsCompanion Function({
+  Value<int> id,
+  required String kind,
+  required int decisionCount,
+  required DateTime createdAt,
+  required String payloadJson,
+  Value<DateTime?> seenAt,
+  Value<DateTime?> sharedAt,
+});
+typedef $$BeatsTableUpdateCompanionBuilder = BeatsCompanion Function({
+  Value<int> id,
+  Value<String> kind,
+  Value<int> decisionCount,
+  Value<DateTime> createdAt,
+  Value<String> payloadJson,
+  Value<DateTime?> seenAt,
+  Value<DateTime?> sharedAt,
+});
+
+class $$BeatsTableFilterComposer extends Composer<_$AppDatabase, $BeatsTable> {
+  $$BeatsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get decisionCount => $composableBuilder(
+    column: $table.decisionCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get seenAt => $composableBuilder(
+    column: $table.seenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get sharedAt => $composableBuilder(
+    column: $table.sharedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BeatsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BeatsTable> {
+  $$BeatsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get decisionCount => $composableBuilder(
+    column: $table.decisionCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get seenAt => $composableBuilder(
+    column: $table.seenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get sharedAt => $composableBuilder(
+    column: $table.sharedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BeatsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BeatsTable> {
+  $$BeatsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get decisionCount => $composableBuilder(
+    column: $table.decisionCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get seenAt =>
+      $composableBuilder(column: $table.seenAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get sharedAt =>
+      $composableBuilder(column: $table.sharedAt, builder: (column) => column);
+}
+
+class $$BeatsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BeatsTable,
+          BeatRow,
+          $$BeatsTableFilterComposer,
+          $$BeatsTableOrderingComposer,
+          $$BeatsTableAnnotationComposer,
+          $$BeatsTableCreateCompanionBuilder,
+          $$BeatsTableUpdateCompanionBuilder,
+          (BeatRow, BaseReferences<_$AppDatabase, $BeatsTable, BeatRow>),
+          BeatRow,
+          PrefetchHooks Function()
+        > {
+  $$BeatsTableTableManager(_$AppDatabase db, $BeatsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BeatsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BeatsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BeatsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> decisionCount = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<DateTime?> seenAt = const Value.absent(),
+                Value<DateTime?> sharedAt = const Value.absent(),
+              }) => BeatsCompanion(
+                id: id,
+                kind: kind,
+                decisionCount: decisionCount,
+                createdAt: createdAt,
+                payloadJson: payloadJson,
+                seenAt: seenAt,
+                sharedAt: sharedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String kind,
+                required int decisionCount,
+                required DateTime createdAt,
+                required String payloadJson,
+                Value<DateTime?> seenAt = const Value.absent(),
+                Value<DateTime?> sharedAt = const Value.absent(),
+              }) => BeatsCompanion.insert(
+                id: id,
+                kind: kind,
+                decisionCount: decisionCount,
+                createdAt: createdAt,
+                payloadJson: payloadJson,
+                seenAt: seenAt,
+                sharedAt: sharedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BeatsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BeatsTable,
+      BeatRow,
+      $$BeatsTableFilterComposer,
+      $$BeatsTableOrderingComposer,
+      $$BeatsTableAnnotationComposer,
+      $$BeatsTableCreateCompanionBuilder,
+      $$BeatsTableUpdateCompanionBuilder,
+      (BeatRow, BaseReferences<_$AppDatabase, $BeatsTable, BeatRow>),
+      BeatRow,
+      PrefetchHooks Function()
+    >;
+typedef $$DailySnapshotsTableCreateCompanionBuilder =
+    DailySnapshotsCompanion Function({
+      required String day,
+      required int photos,
+      required int settled,
+      required int observations,
+      required String top10Json,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$DailySnapshotsTableUpdateCompanionBuilder =
+    DailySnapshotsCompanion Function({
+      Value<String> day,
+      Value<int> photos,
+      Value<int> settled,
+      Value<int> observations,
+      Value<String> top10Json,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$DailySnapshotsTableFilterComposer
+    extends Composer<_$AppDatabase, $DailySnapshotsTable> {
+  $$DailySnapshotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get photos => $composableBuilder(
+    column: $table.photos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get settled => $composableBuilder(
+    column: $table.settled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get observations => $composableBuilder(
+    column: $table.observations,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get top10Json => $composableBuilder(
+    column: $table.top10Json,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DailySnapshotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DailySnapshotsTable> {
+  $$DailySnapshotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get photos => $composableBuilder(
+    column: $table.photos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get settled => $composableBuilder(
+    column: $table.settled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get observations => $composableBuilder(
+    column: $table.observations,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get top10Json => $composableBuilder(
+    column: $table.top10Json,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DailySnapshotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DailySnapshotsTable> {
+  $$DailySnapshotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<int> get photos =>
+      $composableBuilder(column: $table.photos, builder: (column) => column);
+
+  GeneratedColumn<int> get settled =>
+      $composableBuilder(column: $table.settled, builder: (column) => column);
+
+  GeneratedColumn<int> get observations => $composableBuilder(
+    column: $table.observations,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get top10Json =>
+      $composableBuilder(column: $table.top10Json, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$DailySnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DailySnapshotsTable,
+          DailySnapshotRow,
+          $$DailySnapshotsTableFilterComposer,
+          $$DailySnapshotsTableOrderingComposer,
+          $$DailySnapshotsTableAnnotationComposer,
+          $$DailySnapshotsTableCreateCompanionBuilder,
+          $$DailySnapshotsTableUpdateCompanionBuilder,
+          (
+            DailySnapshotRow,
+            BaseReferences<
+              _$AppDatabase,
+              $DailySnapshotsTable,
+              DailySnapshotRow
+            >,
+          ),
+          DailySnapshotRow,
+          PrefetchHooks Function()
+        > {
+  $$DailySnapshotsTableTableManager(
+    _$AppDatabase db,
+    $DailySnapshotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DailySnapshotsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DailySnapshotsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DailySnapshotsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> day = const Value.absent(),
+                Value<int> photos = const Value.absent(),
+                Value<int> settled = const Value.absent(),
+                Value<int> observations = const Value.absent(),
+                Value<String> top10Json = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DailySnapshotsCompanion(
+                day: day,
+                photos: photos,
+                settled: settled,
+                observations: observations,
+                top10Json: top10Json,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String day,
+                required int photos,
+                required int settled,
+                required int observations,
+                required String top10Json,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => DailySnapshotsCompanion.insert(
+                day: day,
+                photos: photos,
+                settled: settled,
+                observations: observations,
+                top10Json: top10Json,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DailySnapshotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DailySnapshotsTable,
+      DailySnapshotRow,
+      $$DailySnapshotsTableFilterComposer,
+      $$DailySnapshotsTableOrderingComposer,
+      $$DailySnapshotsTableAnnotationComposer,
+      $$DailySnapshotsTableCreateCompanionBuilder,
+      $$DailySnapshotsTableUpdateCompanionBuilder,
+      (
+        DailySnapshotRow,
+        BaseReferences<_$AppDatabase, $DailySnapshotsTable, DailySnapshotRow>,
+      ),
+      DailySnapshotRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6750,4 +8087,8 @@ class $AppDatabaseManager {
       $$ViewsTableTableManager(_db, _db.views);
   $$PrefsTableTableManager get prefs =>
       $$PrefsTableTableManager(_db, _db.prefs);
+  $$BeatsTableTableManager get beats =>
+      $$BeatsTableTableManager(_db, _db.beats);
+  $$DailySnapshotsTableTableManager get dailySnapshots =>
+      $$DailySnapshotsTableTableManager(_db, _db.dailySnapshots);
 }

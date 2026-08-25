@@ -10,6 +10,9 @@ enum GameMode {
   bestOfBurst,
   sort3,
   challenger,
+
+  /// Sort three photos that are all in your Top 10.
+  rerankTop,
   browseHeart,
 }
 
@@ -141,6 +144,7 @@ class Decompose {
     required String cardId,
     required List<int> orderedIds,
     required DateTime now,
+    GameMode mode = GameMode.sort3,
   }) =>
       [
         for (var i = 0; i < orderedIds.length; i++)
@@ -148,7 +152,7 @@ class Decompose {
             Observation(
               axisId: axisId,
               cardId: cardId,
-              mode: GameMode.sort3,
+              mode: mode,
               subjectId: orderedIds[i],
               opponentId: orderedIds[j],
               outcome: Outcome.win,

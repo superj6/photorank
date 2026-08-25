@@ -106,6 +106,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       case GameMode.bestOfBurst:
         return BurstCard(ids: c.photoIds, mediaOf: s.mediaOf, onPick: ctl.answerBurst);
       case GameMode.sort3:
+      case GameMode.rerankTop:
         return SortCard(ids: c.photoIds, mediaOf: s.mediaOf, onSorted: ctl.answerSort);
       case GameMode.browseHeart:
         return const SizedBox.shrink();
@@ -170,6 +171,7 @@ class _Header extends StatelessWidget {
         GameMode.rate => 'Rate it',
         GameMode.bestOfBurst => 'Best of burst',
         GameMode.sort3 => 'Sort three',
+        GameMode.rerankTop => 'Re-rank your Top 10',
         GameMode.browseHeart => '',
       };
 }

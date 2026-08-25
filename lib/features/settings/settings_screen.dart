@@ -15,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
     GameMode.bestOfBurst: ('Best of burst', 'Pick the keeper from near-identical shots'),
     GameMode.sort3: ('Sort three', 'Tap three photos in order'),
     GameMode.challenger: ('Challenger', 'A newcomer vs one of your Top 50'),
+    GameMode.rerankTop: ('Re-rank Top 10', 'Sort three of your very best'),
   };
 
   @override

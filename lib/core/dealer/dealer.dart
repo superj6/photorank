@@ -31,6 +31,7 @@ class DealerConfig {
       GameMode.bestOfBurst: 2,
       GameMode.sort3: 1,
       GameMode.challenger: 1,
+      GameMode.rerankTop: 0.5,
     },
     this.handSize = 20,
     this.topTierSize = 50,
@@ -159,6 +160,18 @@ class Dealer {
                 mode: mode, photoIds: ids, clusterId: cluster.first.clusterId);
           }
           return null;
+        case GameMode.rerankTop:
+          // Three photos that are all in the rated Top 10, sorted again.
+          final top10 = byMu.take(10).map((p) => p.id).toSet();
+          if (top10.length < 3) return null;
+          final picks = <int>[];
+          for (final p in ranked) {
+            if (top10.contains(p.id) && !used.contains(p.id)) picks.add(p.id);
+            if (picks.length == 3) break;
+          }
+          if (picks.length < 3) return null;
+          used.addAll(picks);
+          return Card(mode: mode, photoIds: picks..shuffle(_rng));
         case GameMode.browseHeart:
           return null;
       }

@@ -98,6 +98,33 @@ class Views extends Table {
   IntColumn get dwellMs => integer().withDefault(const Constant(0))();
 }
 
+/// Immutable log of beats (in-play moments) that were shown.
+@DataClassName('BeatRow')
+class Beats extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get kind => text()();
+  IntColumn get decisionCount => integer()();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get payloadJson => text()();
+  DateTimeColumn get seenAt => dateTime().nullable()();
+  DateTimeColumn get sharedAt => dateTime().nullable()();
+}
+
+/// One row per calendar day (first open): library shape for trends.
+@DataClassName('DailySnapshotRow')
+class DailySnapshots extends Table {
+  /// yyyy-mm-dd in local time.
+  TextColumn get day => text()();
+  IntColumn get photos => integer()();
+  IntColumn get settled => integer()();
+  IntColumn get observations => integer()();
+  TextColumn get top10Json => text()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {day};
+}
+
 /// Small key/value store for streaks, XP, settings.
 @DataClassName('PrefRow')
 class Prefs extends Table {
@@ -117,6 +144,8 @@ class Prefs extends Table {
   Clusters,
   Views,
   Prefs,
+  Beats,
+  DailySnapshots,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
@@ -125,7 +154,7 @@ class AppDatabase extends _$AppDatabase {
   static const defaultAxisName = 'Love';
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -133,6 +162,16 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
           await into(axes).insert(
               AxesCompanion.insert(name: defaultAxisName, isDefault: const Value(true)));
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(beats);
+            await m.createTable(dailySnapshots);
+            // Existing installs keep every mode; only new installs unlock
+            // modes progressively.
+            await into(prefs).insertOnConflictUpdate(
+                PrefsCompanion.insert(key: 'unlock_all', value: '1'));
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');

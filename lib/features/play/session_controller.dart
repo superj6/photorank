@@ -265,6 +265,7 @@ class SessionController extends Notifier<SessionState> {
         axisId: _axis,
         cardId: _cardId(state.index),
         orderedIds: orderedIds,
+        mode: state.current!.mode,
         now: DateTime.now(),
       ));
 }
