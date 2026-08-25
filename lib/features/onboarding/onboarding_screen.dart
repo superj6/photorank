@@ -90,12 +90,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   key: const ValueKey(2),
                   icon: Icons.tune_rounded,
                   title: 'Where to start?',
-                  body: 'Start small so the first hand feels relevant. You can widen the scope any time in Settings.',
+                  body: 'Your whole library is in play by default — every photo gets its chance. You can narrow the scope any time in Settings.',
                   action: _busy
                       ? (scan == null ? 'Indexing…' : 'Indexing ${scan.indexed}…')
-                      : 'Last 12 months (recommended)',
-                  onAction: _busy ? null : () => _start(months: 12),
-                  secondary: _busy ? null : ('Everything', () => _start(months: null)),
+                      : 'All my photos',
+                  onAction: _busy ? null : () => _start(months: null),
+                  secondary: _busy ? null : ('Just the last 12 months', () => _start(months: 12)),
                 ),
             },
           ),
