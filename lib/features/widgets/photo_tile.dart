@@ -7,7 +7,10 @@ import '../../app/theme.dart';
 
 /// A device photo by media id, with a soft fade-in. Long-press to peek at
 /// full resolution when [peekable].
-class PhotoTile extends ConsumerWidget {
+///
+/// Holds one future per media id: rebuilding (animations, parents) must not
+/// re-fetch and flash a placeholder.
+class PhotoTile extends ConsumerStatefulWidget {
   const PhotoTile({
     super.key,
     required this.mediaId,
@@ -32,41 +35,71 @@ class PhotoTile extends ConsumerWidget {
   final Widget? child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PhotoTile> createState() => _PhotoTileState();
+}
+
+class _PhotoTileState extends ConsumerState<PhotoTile> {
+  AssetEntity? _entity;
+  String? _for;
+
+  void _resolve() {
+    final id = widget.mediaId;
+    _for = id;
+    if (id == null) {
+      _entity = null;
+      return;
+    }
+    final cache = ref.read(thumbCacheProvider);
+    _entity = cache.cached(id);
+    if (_entity == null) {
+      cache.entity(id).then((e) {
+        if (mounted && _for == id) setState(() => _entity = e);
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _resolve();
+  }
+
+  @override
+  void didUpdateWidget(PhotoTile old) {
+    super.didUpdateWidget(old);
+    if (old.mediaId != widget.mediaId) _resolve();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cache = ref.watch(thumbCacheProvider);
-    final id = mediaId;
-    final image = id == null
+    final id = widget.mediaId;
+    final e = _entity;
+    final Widget image = id == null
         ? const _Missing()
-        : FutureBuilder<AssetEntity?>(
-            future: cache.entity(id),
-            builder: (context, snap) {
-              final e = snap.data;
-              if (e == null) return const _Placeholder();
-              return Image(
-                image: cache.provider(e, size: size),
-                fit: fit,
+        : e == null
+            ? const _Placeholder()
+            : Image(
+                image: cache.provider(e, size: widget.size),
+                fit: widget.fit,
                 gaplessPlayback: true,
-                frameBuilder: (_, child, frame, _) => AnimatedOpacity(
-                  opacity: frame == null ? 0 : 1,
-                  duration: const Duration(milliseconds: 180),
-                  child: child,
-                ),
+                frameBuilder: (_, child, frame, wasSync) => wasSync
+                    ? child
+                    : AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: const Duration(milliseconds: 180), child: child),
                 errorBuilder: (_, _, _) => const _Missing(),
               );
-            },
-          );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.circular(widget.borderRadius),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onDoubleTap: onDoubleTap,
-        onLongPress: peekable && id != null ? () => PhotoPeek.show(context, id) : null,
+        onTap: widget.onTap,
+        onDoubleTap: widget.onDoubleTap,
+        onLongPress: widget.peekable && id != null ? () => PhotoPeek.show(context, id) : null,
         child: Stack(
           fit: StackFit.expand,
           children: [
             ColoredBox(color: AppTheme.surface, child: image),
-            ?child,
+            ?widget.child,
           ],
         ),
       ),

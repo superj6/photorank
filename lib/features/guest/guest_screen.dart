@@ -49,8 +49,15 @@ class GuestController extends Notifier<GuestState> {
     state = GuestState(stage: GuestStage.play, mode: mode, name: name.trim().isEmpty ? 'Your friend' : name.trim(), cards: cards, mediaIds: {for (final r in rows) r.id: r.mediaId});
   }
 
-  void pick(int id) => _answer(GuestGame.scoreDuel(state.current!, id));
-  void vibe(bool feltIt) => _answer(GuestGame.scoreVibe(state.current!, feltIt));
+  void pick(int id) {
+    final c = state.current;
+    if (c != null && (c.a == id || c.b == id)) _answer(GuestGame.scoreDuel(c, id));
+  }
+
+  void vibe(bool feltIt) {
+    final c = state.current;
+    if (c != null && c.kind == GuestCardKind.vibe) _answer(GuestGame.scoreVibe(c, feltIt));
+  }
 
   void _answer(GuestAnswer a) {
     HapticFeedback.lightImpact();

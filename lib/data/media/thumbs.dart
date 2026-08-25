@@ -10,6 +10,9 @@ class ThumbCache {
   final int capacity;
   final _entities = <String, AssetEntity>{};
 
+  /// Cached entity without an async hop (null if not fetched yet).
+  AssetEntity? cached(String mediaId) => _entities[mediaId];
+
   Future<AssetEntity?> entity(String mediaId) async {
     final hit = _entities.remove(mediaId);
     if (hit != null) {
