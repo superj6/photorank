@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/beats/moments_screen.dart';
 import '../features/bracket/bracket_screen.dart';
+import '../features/guest/guest_screen.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/play/play_screen.dart';
@@ -18,6 +19,7 @@ GoRouter buildRouter({required String initialLocation}) => GoRouter(
         GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
         GoRoute(path: '/moments', builder: (_, _) => const MomentsScreen()),
         GoRoute(path: '/bracket', builder: (_, _) => const BracketScreen()),
+        GoRoute(path: '/guest', builder: (_, _) => const GuestScreen()),
         GoRoute(
           path: '/photo/:id',
           pageBuilder: (_, state) => CustomTransitionPage(

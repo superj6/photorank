@@ -50,6 +50,7 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
             onSelected: (v) => _action(context, v),
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'bracket', child: ListTile(leading: Icon(Icons.account_tree_rounded), title: Text('Play a bracket'))),
+              PopupMenuItem(value: 'guest', child: ListTile(leading: Icon(Icons.people_alt_rounded), title: Text('Pass the phone'))),
               PopupMenuDivider(),
               PopupMenuItem(value: 'top9', child: ListTile(leading: Icon(Icons.grid_on_rounded), title: Text('Share my top 9'))),
               PopupMenuItem(value: 'one', child: ListTile(leading: Icon(Icons.looks_one_rounded), title: Text('Share my #1'))),
@@ -150,6 +151,8 @@ extension on _RankingScreenState {
     switch (action) {
       case 'bracket':
         context.push('/bracket');
+      case 'guest':
+        context.push('/guest');
       case 'top9':
         if (rated.length < 9) {
           messenger.showSnackBar(const SnackBar(content: Text('Rank at least 9 photos first.')));

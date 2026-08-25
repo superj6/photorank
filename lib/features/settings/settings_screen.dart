@@ -141,6 +141,13 @@ class SettingsScreen extends ConsumerWidget {
               }
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.people_alt_rounded),
+            title: const Text('Pass the phone'),
+            subtitle: const Text('A friend plays on your photos — do you agree? Do they know you?'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/guest'),
+          ),
           const _Section('Reminders'),
           _NotifyToggle(
             prefKey: 'notify_weekly',
