@@ -93,6 +93,14 @@ class PhotoRepo {
     return clusters.length;
   }
 
+  /// Burst decided: siblings collapse behind the winner.
+  Future<void> shadow(int winnerId, Iterable<int> siblingIds) =>
+      (db.update(db.photos)..where((p) => p.id.isIn(siblingIds.where((s) => s != winnerId).toList())))
+          .write(PhotosCompanion(shadowedBy: Value(winnerId)));
+
+  Future<void> unshadow(Iterable<int> ids) =>
+      (db.update(db.photos)..where((p) => p.id.isIn(ids.toList()))).write(const PhotosCompanion(shadowedBy: Value(null)));
+
   Future<void> resolveCluster(int clusterId) =>
       (db.update(db.clusters)..where((c) => c.id.equals(clusterId)))
           .write(const ClustersCompanion(resolved: Value(true)));

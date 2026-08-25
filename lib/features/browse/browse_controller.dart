@@ -4,6 +4,7 @@ import '../../app/providers.dart';
 import '../../core/dealer/photo_state.dart';
 import '../../core/rating/observation.dart';
 import '../../core/sampler/collections.dart';
+import '../../core/sampler/moments.dart';
 import '../../core/sampler/rank_sampler.dart';
 
 class BrowseState {
@@ -70,7 +71,7 @@ class BrowseController extends Notifier<BrowseState> {
     String? label;
     switch (state.channel) {
       case Channel.topShelf:
-        next = sampler.topShelf(source, count: _pageSize, exclude: _seen);
+        next = sampler.topShelf(onePerMoment([...source]..sort((a, b) => b.mu.compareTo(a.mu)), keys: momentKeys(pool)), count: _pageSize, exclude: _seen);
       case Channel.wildcard:
         next = sampler.sample(pool, count: _pageSize, temperature: null, exclude: _seen);
       case Channel.deepCuts:

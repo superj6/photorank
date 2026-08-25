@@ -22,6 +22,10 @@ class Photos extends Table {
 
   /// Set when a rescan no longer finds the asset; kept so history survives.
   BoolColumn get missing => boolean().withDefault(const Constant(false))();
+
+  /// After Best-of-Burst, losers point at the winner: the burst is decided,
+  /// so they are not re-dealt against it and collapse behind it in views.
+  IntColumn get shadowedBy => integer().nullable()();
 }
 
 /// A ranking dimension. "Love" is the default; more can be added later.
@@ -154,7 +158,7 @@ class AppDatabase extends _$AppDatabase {
   static const defaultAxisName = 'Love';
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -171,6 +175,9 @@ class AppDatabase extends _$AppDatabase {
             // modes progressively.
             await into(prefs).insertOnConflictUpdate(
                 PrefsCompanion.insert(key: 'unlock_all', value: '1'));
+          }
+          if (from < 3) {
+            await m.addColumn(photos, photos.shadowedBy);
           }
         },
         beforeOpen: (details) async {

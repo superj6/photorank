@@ -7,6 +7,7 @@ import 'package:photorank/core/rating/glicko.dart';
 import 'package:photorank/core/rating/observation.dart';
 
 void main() {
+  momentDealerTests();
   final now = DateTime(2026, 8, 24, 12);
 
   List<PhotoState> library(int n, {double rd = 350, int seed = 1, bool rated = true}) {
@@ -151,5 +152,36 @@ void main() {
       expect(clusters.every((c) => c.length <= 9 && c.length >= 3), isTrue);
       expect(clusters.expand((c) => c).length, 20);
     });
+  });
+}
+
+void momentDealerTests() {
+  final now = DateTime(2026, 8, 24, 12);
+  test('dealer never duels burst siblings, deals one per burst, benches shadowed losers', () {
+    final photos = [
+      for (var i = 0; i < 60; i++)
+        PhotoState(
+          id: i,
+          rating: Rating(mu: 1500 + (i % 7) * 20, rd: 60),
+          observations: 1,
+          takenAt: now.subtract(Duration(hours: i)),
+          clusterId: i < 12 ? i ~/ 4 : null, // three bursts of four
+          shadowedBy: i == 1 || i == 2 ? 0 : null, // burst 0 decided, 0 won
+        ),
+    ];
+    for (var seed = 0; seed < 10; seed++) {
+      final cards = Dealer(rng: Random(seed)).dealHand(photos,
+          config: const DealerConfig(modeWeights: {GameMode.duel: 2, GameMode.vibeCheck: 1, GameMode.sort3: 1}), now: now);
+      final byId = {for (final p in photos) p.id: p};
+      final seenClusters = <int>{};
+      for (final c in cards) {
+        final clusters = c.photoIds.map((id) => byId[id]!.clusterId).whereType<int>().toList();
+        expect(clusters.toSet().length, clusters.length, reason: 'no two members of one burst in a card');
+        for (final cl in clusters) {
+          expect(seenClusters.add(cl), isTrue, reason: 'one member per burst per hand');
+        }
+        expect(c.photoIds.any((id) => byId[id]!.shadowedBy != null), isFalse, reason: 'shadowed losers sit out');
+      }
+    }
   });
 }

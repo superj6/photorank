@@ -13,6 +13,7 @@ class PhotoState {
     this.views = 0,
     this.mediaId,
     this.landscape = false,
+    this.shadowedBy,
   });
 
   final int id;
@@ -30,6 +31,9 @@ class PhotoState {
   /// Wider than tall.
   final bool landscape;
 
+  /// Burst winner this photo lost to, if the burst has been decided.
+  final int? shadowedBy;
+
   double get mu => rating.mu;
   double get rd => rating.rd;
   bool get unseen => lastShownAt == null;
@@ -46,5 +50,6 @@ class PhotoState {
         views: views ?? this.views,
         mediaId: mediaId,
         landscape: landscape,
+        shadowedBy: shadowedBy,
       );
 }

@@ -87,12 +87,24 @@ class Dealer {
     final cards = <Card>[];
     final modes = _enabledModes(config);
     var burstQueue = bursts.where((c) => c.length >= 3).toList()..shuffle(_rng);
+    // One member per moment per hand; shadowed burst losers sit out (their
+    // winner represents the moment) unless nothing else is left.
+    final usedClusters = <int>{};
+    bool blocked(PhotoState p) =>
+        (p.clusterId != null && usedClusters.contains(p.clusterId)) || p.shadowedBy != null;
+    void take(PhotoState p) {
+      used.add(p.id);
+      if (p.clusterId != null) usedClusters.add(p.clusterId!);
+    }
 
     PhotoState? next({bool Function(PhotoState)? where}) {
-      for (final p in ranked) {
-        if (used.contains(p.id)) continue;
-        if (where != null && !where(p)) continue;
-        return p;
+      for (final pass in [true, false]) {
+        for (final p in ranked) {
+          if (used.contains(p.id)) continue;
+          if (pass && blocked(p)) continue;
+          if (where != null && !where(p)) continue;
+          return p;
+        }
       }
       return null;
     }
@@ -103,6 +115,8 @@ class Dealer {
       var bestDist = double.infinity;
       for (final p in ranked) {
         if (p.id == a.id || used.contains(p.id)) continue;
+        if (a.clusterId != null && p.clusterId == a.clusterId) continue; // never duel your own burst
+        if (blocked(p)) continue;
         if (where != null && !where(p)) continue;
         final dist = (p.mu - a.mu).abs();
         if (dist <= window) return p; // ranked is priority-ordered
@@ -120,14 +134,15 @@ class Dealer {
         case GameMode.rate:
           final a = next();
           if (a == null) return null;
-          used.add(a.id);
+          take(a);
           return Card(mode: mode, photoIds: [a.id]);
         case GameMode.duel:
           final a = next();
           if (a == null) return null;
           final b = opponentFor(a);
           if (b == null) return null;
-          used.addAll([a.id, b.id]);
+          take(a);
+          take(b);
           return Card(mode: mode, photoIds: [a.id, b.id]);
         case GameMode.challenger:
           if (topTier.length < 10) return null;
@@ -135,18 +150,19 @@ class Dealer {
           if (a == null) return null;
           final b = opponentFor(a, where: (p) => topTier.contains(p.id));
           if (b == null) return null;
-          used.addAll([a.id, b.id]);
+          take(a);
+          take(b);
           return Card(mode: mode, photoIds: [a.id, b.id]);
         case GameMode.sort3:
           final a = next();
           if (a == null) return null;
-          used.add(a.id);
+          take(a);
           final b = opponentFor(a);
           if (b == null) return null;
-          used.add(b.id);
+          take(b);
           final c = opponentFor(a);
           if (c == null) return null;
-          used.add(c.id);
+          take(c);
           final ids = [a.id, b.id, c.id]..shuffle(_rng);
           return Card(mode: mode, photoIds: ids);
         case GameMode.bestOfBurst:

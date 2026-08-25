@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/bracket/bracket.dart';
 import '../../core/rating/observation.dart';
+import '../../core/sampler/moments.dart';
 import '../beats/beat_photo.dart';
 import '../play/cards/duel_card.dart';
 import '../share/share_preview_screen.dart';
@@ -41,7 +42,7 @@ class BracketController extends Notifier<BracketState> {
     _axis = await ref.read(axisIdProvider.future);
     final states = await ref.read(rankingRepoProvider).photoStates(_axis);
     final rated = states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
-    final bracket = Bracket.seed(rated.map((s) => s.id).toList());
+    final bracket = Bracket.seed(onePerMoment(rated, keys: momentKeys(states)).map((s) => s.id).toList());
     state = BracketState(bracket: bracket, loading: false, tooFew: bracket == null);
   }
 

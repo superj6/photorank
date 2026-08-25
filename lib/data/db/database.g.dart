@@ -398,6 +398,17 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _shadowedByMeta = const VerificationMeta(
+    'shadowedBy',
+  );
+  @override
+  late final GeneratedColumn<int> shadowedBy = GeneratedColumn<int>(
+    'shadowed_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -412,6 +423,7 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
     lastShownAt,
     views,
     missing,
+    shadowedBy,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -501,6 +513,12 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
         missing.isAcceptableOrUnknown(data['missing']!, _missingMeta),
       );
     }
+    if (data.containsKey('shadowed_by')) {
+      context.handle(
+        _shadowedByMeta,
+        shadowedBy.isAcceptableOrUnknown(data['shadowed_by']!, _shadowedByMeta),
+      );
+    }
     return context;
   }
 
@@ -558,6 +576,10 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}missing'],
       )!,
+      shadowedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}shadowed_by'],
+      ),
     );
   }
 
@@ -584,6 +606,10 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
 
   /// Set when a rescan no longer finds the asset; kept so history survives.
   final bool missing;
+
+  /// After Best-of-Burst, losers point at the winner: the burst is decided,
+  /// so they are not re-dealt against it and collapse behind it in views.
+  final int? shadowedBy;
   const PhotoRow({
     required this.id,
     required this.mediaId,
@@ -597,6 +623,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     this.lastShownAt,
     required this.views,
     required this.missing,
+    this.shadowedBy,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -623,6 +650,9 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     }
     map['views'] = Variable<int>(views);
     map['missing'] = Variable<bool>(missing);
+    if (!nullToAbsent || shadowedBy != null) {
+      map['shadowed_by'] = Variable<int>(shadowedBy);
+    }
     return map;
   }
 
@@ -650,6 +680,9 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
           : Value(lastShownAt),
       views: Value(views),
       missing: Value(missing),
+      shadowedBy: shadowedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shadowedBy),
     );
   }
 
@@ -671,6 +704,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
       lastShownAt: serializer.fromJson<DateTime?>(json['lastShownAt']),
       views: serializer.fromJson<int>(json['views']),
       missing: serializer.fromJson<bool>(json['missing']),
+      shadowedBy: serializer.fromJson<int?>(json['shadowedBy']),
     );
   }
   @override
@@ -689,6 +723,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
       'lastShownAt': serializer.toJson<DateTime?>(lastShownAt),
       'views': serializer.toJson<int>(views),
       'missing': serializer.toJson<bool>(missing),
+      'shadowedBy': serializer.toJson<int?>(shadowedBy),
     };
   }
 
@@ -705,6 +740,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     Value<DateTime?> lastShownAt = const Value.absent(),
     int? views,
     bool? missing,
+    Value<int?> shadowedBy = const Value.absent(),
   }) => PhotoRow(
     id: id ?? this.id,
     mediaId: mediaId ?? this.mediaId,
@@ -718,6 +754,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     lastShownAt: lastShownAt.present ? lastShownAt.value : this.lastShownAt,
     views: views ?? this.views,
     missing: missing ?? this.missing,
+    shadowedBy: shadowedBy.present ? shadowedBy.value : this.shadowedBy,
   );
   PhotoRow copyWithCompanion(PhotosCompanion data) {
     return PhotoRow(
@@ -737,6 +774,9 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
           : this.lastShownAt,
       views: data.views.present ? data.views.value : this.views,
       missing: data.missing.present ? data.missing.value : this.missing,
+      shadowedBy: data.shadowedBy.present
+          ? data.shadowedBy.value
+          : this.shadowedBy,
     );
   }
 
@@ -754,7 +794,8 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
           ..write('addedAt: $addedAt, ')
           ..write('lastShownAt: $lastShownAt, ')
           ..write('views: $views, ')
-          ..write('missing: $missing')
+          ..write('missing: $missing, ')
+          ..write('shadowedBy: $shadowedBy')
           ..write(')'))
         .toString();
   }
@@ -773,6 +814,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     lastShownAt,
     views,
     missing,
+    shadowedBy,
   );
   @override
   bool operator ==(Object other) =>
@@ -789,7 +831,8 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
           other.addedAt == this.addedAt &&
           other.lastShownAt == this.lastShownAt &&
           other.views == this.views &&
-          other.missing == this.missing);
+          other.missing == this.missing &&
+          other.shadowedBy == this.shadowedBy);
 }
 
 class PhotosCompanion extends UpdateCompanion<PhotoRow> {
@@ -805,6 +848,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
   final Value<DateTime?> lastShownAt;
   final Value<int> views;
   final Value<bool> missing;
+  final Value<int?> shadowedBy;
   const PhotosCompanion({
     this.id = const Value.absent(),
     this.mediaId = const Value.absent(),
@@ -818,6 +862,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     this.lastShownAt = const Value.absent(),
     this.views = const Value.absent(),
     this.missing = const Value.absent(),
+    this.shadowedBy = const Value.absent(),
   });
   PhotosCompanion.insert({
     this.id = const Value.absent(),
@@ -832,6 +877,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     this.lastShownAt = const Value.absent(),
     this.views = const Value.absent(),
     this.missing = const Value.absent(),
+    this.shadowedBy = const Value.absent(),
   }) : mediaId = Value(mediaId),
        addedAt = Value(addedAt);
   static Insertable<PhotoRow> custom({
@@ -847,6 +893,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     Expression<DateTime>? lastShownAt,
     Expression<int>? views,
     Expression<bool>? missing,
+    Expression<int>? shadowedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -861,6 +908,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
       if (lastShownAt != null) 'last_shown_at': lastShownAt,
       if (views != null) 'views': views,
       if (missing != null) 'missing': missing,
+      if (shadowedBy != null) 'shadowed_by': shadowedBy,
     });
   }
 
@@ -877,6 +925,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     Value<DateTime?>? lastShownAt,
     Value<int>? views,
     Value<bool>? missing,
+    Value<int?>? shadowedBy,
   }) {
     return PhotosCompanion(
       id: id ?? this.id,
@@ -891,6 +940,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
       lastShownAt: lastShownAt ?? this.lastShownAt,
       views: views ?? this.views,
       missing: missing ?? this.missing,
+      shadowedBy: shadowedBy ?? this.shadowedBy,
     );
   }
 
@@ -933,6 +983,9 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     if (missing.present) {
       map['missing'] = Variable<bool>(missing.value);
     }
+    if (shadowedBy.present) {
+      map['shadowed_by'] = Variable<int>(shadowedBy.value);
+    }
     return map;
   }
 
@@ -950,7 +1003,8 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
           ..write('addedAt: $addedAt, ')
           ..write('lastShownAt: $lastShownAt, ')
           ..write('views: $views, ')
-          ..write('missing: $missing')
+          ..write('missing: $missing, ')
+          ..write('shadowedBy: $shadowedBy')
           ..write(')'))
         .toString();
   }
@@ -4554,6 +4608,7 @@ typedef $$PhotosTableCreateCompanionBuilder = PhotosCompanion Function({
   Value<DateTime?> lastShownAt,
   Value<int> views,
   Value<bool> missing,
+  Value<int?> shadowedBy,
 });
 typedef $$PhotosTableUpdateCompanionBuilder = PhotosCompanion Function({
   Value<int> id,
@@ -4568,6 +4623,7 @@ typedef $$PhotosTableUpdateCompanionBuilder = PhotosCompanion Function({
   Value<DateTime?> lastShownAt,
   Value<int> views,
   Value<bool> missing,
+  Value<int?> shadowedBy,
 });
 
 final class $$PhotosTableReferences
@@ -4731,6 +4787,11 @@ class $$PhotosTableFilterComposer
 
   ColumnFilters<bool> get missing => $composableBuilder(
     column: $table.missing,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get shadowedBy => $composableBuilder(
+    column: $table.shadowedBy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4922,6 +4983,11 @@ class $$PhotosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get shadowedBy => $composableBuilder(
+    column: $table.shadowedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ClustersTableOrderingComposer get clusterId {
     final $$ClustersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4991,6 +5057,11 @@ class $$PhotosTableAnnotationComposer
 
   GeneratedColumn<bool> get missing =>
       $composableBuilder(column: $table.missing, builder: (column) => column);
+
+  GeneratedColumn<int> get shadowedBy => $composableBuilder(
+    column: $table.shadowedBy,
+    builder: (column) => column,
+  );
 
   $$ClustersTableAnnotationComposer get clusterId {
     final $$ClustersTableAnnotationComposer composer = $composerBuilder(
@@ -5162,6 +5233,7 @@ class $$PhotosTableTableManager
                 Value<DateTime?> lastShownAt = const Value.absent(),
                 Value<int> views = const Value.absent(),
                 Value<bool> missing = const Value.absent(),
+                Value<int?> shadowedBy = const Value.absent(),
               }) => PhotosCompanion(
                 id: id,
                 mediaId: mediaId,
@@ -5175,6 +5247,7 @@ class $$PhotosTableTableManager
                 lastShownAt: lastShownAt,
                 views: views,
                 missing: missing,
+                shadowedBy: shadowedBy,
               ),
           createCompanionCallback:
               ({
@@ -5190,6 +5263,7 @@ class $$PhotosTableTableManager
                 Value<DateTime?> lastShownAt = const Value.absent(),
                 Value<int> views = const Value.absent(),
                 Value<bool> missing = const Value.absent(),
+                Value<int?> shadowedBy = const Value.absent(),
               }) => PhotosCompanion.insert(
                 id: id,
                 mediaId: mediaId,
@@ -5203,6 +5277,7 @@ class $$PhotosTableTableManager
                 lastShownAt: lastShownAt,
                 views: views,
                 missing: missing,
+                shadowedBy: shadowedBy,
               ),
           withReferenceMapper: (p0) => p0
               .map(

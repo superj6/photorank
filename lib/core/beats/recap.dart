@@ -1,5 +1,6 @@
 import '../dealer/photo_state.dart';
 import '../rating/glicko.dart';
+import '../sampler/moments.dart';
 import 'beat.dart';
 import 'beat_engine.dart';
 
@@ -108,7 +109,7 @@ class RecapInput {
   final List<PairInfo> pairs;
   final DateTime now;
 
-  List<PhotoState> get rated => states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
+  List<PhotoState> get rated => onePerMoment(states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu)), keys: momentKeys(states));
   List<PhotoState> get takenInPeriod => states.where((s) => s.takenAt != null && period.contains(s.takenAt!)).toList();
   List<PhotoState> get addedInPeriod => states.where((s) => s.addedAt != null && period.contains(s.addedAt!)).toList();
   int get settledNow => states.where((s) => s.rating.confidence >= 0.5).length;
@@ -127,7 +128,7 @@ class RecapEngine {
       NumbersPage(decisions: i.decisions, sessions: i.sessions, minutes: i.minutes, streak: i.streak, newPhotos: i.addedInPeriod.length),
     ];
     final rated = i.rated;
-    final takenRanked = i.takenInPeriod.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
+    final takenRanked = onePerMoment(i.takenInPeriod.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu)), keys: momentKeys(i.states));
 
     if (p.kind != BeatKind.weekly && takenRanked.isNotEmpty) {
       pages.add(BestOfPeriodPage(photoId: takenRanked.first.id, label: p.kind == BeatKind.yearly ? '#1 of ${p.start.year}' : 'Best of ${p.label}'));

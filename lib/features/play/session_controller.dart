@@ -16,6 +16,7 @@ import '../../core/dealer/dealer.dart';
 import '../../core/rating/engine.dart';
 import '../../core/rating/glicko.dart';
 import '../../core/rating/observation.dart';
+import '../../core/sampler/moments.dart';
 import '../../core/stats/progress.dart';
 import '../../data/db/database.dart';
 import '../../data/repo/beat_repo.dart';
@@ -188,7 +189,7 @@ class SessionController extends Notifier<SessionState> {
     }
     final rows = await photosRepo.byIds({for (final c in hand) ...c.photoIds});
     final rated = states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
-    _topBefore = rated.take(10).map((p) => p.id).toSet();
+    _topBefore = onePerMoment(rated, keys: momentKeys(states)).take(10).map((p) => p.id).toSet();
     _before = {for (final s in states) s.id: s.rating};
 
     final sessions = await _beats.sessions();
@@ -282,8 +283,10 @@ class SessionController extends Notifier<SessionState> {
     HapticFeedback.lightImpact();
     final card = state.current!;
     final delta = await ref.read(rankingRepoProvider).applyCard(obs, sessionId: state.sessionId);
-    if (card.mode == GameMode.bestOfBurst && card.clusterId != null) {
-      await ref.read(photoRepoProvider).resolveCluster(card.clusterId!);
+    if (card.mode == GameMode.bestOfBurst) {
+      final winner = obs.first.subjectId;
+      await ref.read(photoRepoProvider).shadow(winner, card.photoIds);
+      if (card.clusterId != null) await ref.read(photoRepoProvider).resolveCluster(card.clusterId!);
     }
     final previous = _decisions;
     _decisions++;
@@ -536,8 +539,9 @@ class SessionController extends Notifier<SessionState> {
       await ref.read(rankingRepoProvider).undoCard(_cardId(prev));
       _decisions--;
       final card = state.hand[prev];
-      if (card.mode == GameMode.bestOfBurst && card.clusterId != null) {
-        await _unresolve(card.clusterId!);
+      if (card.mode == GameMode.bestOfBurst) {
+        await ref.read(photoRepoProvider).unshadow(card.photoIds);
+        if (card.clusterId != null) await _unresolve(card.clusterId!);
       }
       // Undo can move the top or settled counts; re-derive rather than guess.
       _initTracking(await ref.read(rankingRepoProvider).photoStates(_axis));
@@ -563,7 +567,7 @@ class SessionController extends Notifier<SessionState> {
     final db = ref.read(dbProvider);
     final states = await ranking.photoStates(_axis);
     final byMu = states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
-    final topNow = byMu.take(10).map((p) => p.id).toList();
+    final topNow = onePerMoment(byMu, keys: momentKeys(states)).take(10).map((p) => p.id).toList();
     final touched = {
       for (var i = 0; i < state.hand.length; i++)
         if (i < state.answered.length && state.answered[i]) ...state.hand[i].photoIds,

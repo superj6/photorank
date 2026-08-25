@@ -3,6 +3,7 @@ import 'dart:math';
 import '../dealer/photo_state.dart';
 import '../rating/glicko.dart';
 import '../rating/observation.dart';
+import '../sampler/moments.dart';
 import 'beat.dart';
 import 'beat_scheduler.dart';
 import 'unlocks.dart';
@@ -72,7 +73,10 @@ class BeatInput {
   /// No beat has ever fired: the first one is always "Your first Top 3".
   final bool firstBeat;
 
-  List<PhotoState> get rated => states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
+  List<PhotoState> get ratedAll => states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
+
+  /// Rated, best first, one photo per moment (Top views never show ten sunsets).
+  List<PhotoState> get rated => onePerMoment(ratedAll, keys: momentKeys(states));
   int get settledCount => states.where((s) => s.rating.confidence >= 0.5).length;
 }
 

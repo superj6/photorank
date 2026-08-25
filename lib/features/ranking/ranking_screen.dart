@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/dealer/photo_state.dart';
+import '../../core/sampler/moments.dart';
 import '../../data/media/favorites_sync.dart';
 import '../share/share_cards.dart';
 import '../share/share_preview_screen.dart';
@@ -24,14 +25,62 @@ class RankingScreen extends ConsumerStatefulWidget {
 
 class _RankingScreenState extends ConsumerState<RankingScreen> {
   _Filter _filter = _Filter.top100;
+  bool _onePerMoment = true;
 
-  List<PhotoState> _apply(List<PhotoState> all) => switch (_filter) {
-        _Filter.top10 => all.where((p) => p.observations > 0).take(10).toList(),
-        _Filter.top100 => all.where((p) => p.observations > 0).take(100).toList(),
-        _Filter.all => all,
-        _Filter.settling => all.where((p) => p.observations > 0 && p.rating.confidence < 0.5).toList(),
-        _Filter.unseen => all.where((p) => p.observations == 0).toList(),
-      };
+  /// Rows to show: each is a moment (best + similar) in the current filter.
+  List<Moment> _apply(List<PhotoState> all) {
+    final keys = momentKeys(all);
+    List<Moment> wrap(List<PhotoState> l) => _onePerMoment ? collapseMoments(l, keys: keys) : [for (final p in l) Moment(best: p, similar: const [])];
+    final rated = all.where((p) => p.observations > 0).toList();
+    return switch (_filter) {
+      _Filter.top10 => wrap(rated).take(10).toList(),
+      _Filter.top100 => wrap(rated).take(100).toList(),
+      _Filter.all => wrap(all),
+      _Filter.settling => wrap(rated.where((p) => p.rating.confidence < 0.5).toList()),
+      _Filter.unseen => wrap(all.where((p) => p.observations == 0).toList()),
+    };
+  }
+
+  void _showMoment(BuildContext context, Moment m, int rank) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('#$rank · ${m.size} similar shots', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            const Text('Ranked separately; shown as one moment so your Top 10 stays varied.', style: TextStyle(color: Colors.white60, fontSize: 13)),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 150,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: m.size,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final p = m.all[i];
+                  return SizedBox(
+                    width: 112,
+                    child: PhotoTile(
+                      mediaId: p.mediaId,
+                      size: ThumbCacheSizes.grid,
+                      borderRadius: 12,
+                      onTap: () => context.openPhoto(p.id),
+                      child: Align(alignment: Alignment.bottomRight, child: Padding(padding: const EdgeInsets.all(6), child: Pill('${p.rating.score.round()}', color: i == 0 ? AppTheme.accent : null))),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +89,11 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
       appBar: AppBar(
         title: const Text('Your ranking'),
         actions: [
+          IconButton(
+            tooltip: _onePerMoment ? 'Showing one per moment' : 'Showing every photo',
+            icon: Icon(_onePerMoment ? Icons.filter_1_rounded : Icons.filter_none_rounded),
+            onPressed: () => setState(() => _onePerMoment = !_onePerMoment),
+          ),
           IconButton(
             tooltip: 'Moments',
             icon: const Icon(Icons.auto_awesome),
@@ -108,8 +162,9 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
                 crossAxisCount: 3, mainAxisSpacing: 6, crossAxisSpacing: 6, childAspectRatio: 0.8),
             itemCount: items.length,
             itemBuilder: (_, i) {
-              final p = items[i];
-              final rank = all.indexOf(p) + 1;
+              final m = items[i];
+              final p = m.best;
+              final rank = _filter == _Filter.all || _filter == _Filter.unseen ? all.indexOf(p) + 1 : i + 1;
               return PhotoTile(
                 mediaId: p.mediaId,
                 size: ThumbCacheSizes.grid,
@@ -122,6 +177,15 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
                         left: 6,
                         top: 6,
                         child: Pill('#$rank', color: rank <= 10 ? AppTheme.accent : null),
+                      ),
+                    if (m.similar.isNotEmpty)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: GestureDetector(
+                          onTap: () => _showMoment(context, m, rank),
+                          child: Pill('+${m.similar.length}', icon: Icons.layers_rounded),
+                        ),
                       ),
                     Positioned(
                       right: 6,
@@ -142,7 +206,7 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
 extension on _RankingScreenState {
   Future<void> _action(BuildContext context, String action) async {
     final all = ref.read(rankingProvider).value ?? const [];
-    final rated = all.where((p) => p.observations > 0).toList();
+    final rated = onePerMoment(all.where((p) => p.observations > 0).toList(), keys: momentKeys(all));
     if (rated.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Play a hand first.')));
       return;

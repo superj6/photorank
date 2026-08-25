@@ -152,6 +152,7 @@ class RankingRepo {
       views: p.views,
       mediaId: p.mediaId,
       landscape: p.width > p.height,
+      shadowedBy: p.shadowedBy,
     );
   }
 
