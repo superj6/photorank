@@ -48,6 +48,8 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
             tooltip: 'Share & export',
             onSelected: (v) => _action(context, v),
             itemBuilder: (_) => const [
+              PopupMenuItem(value: 'bracket', child: ListTile(leading: Icon(Icons.account_tree_rounded), title: Text('Play a bracket'))),
+              PopupMenuDivider(),
               PopupMenuItem(value: 'top9', child: ListTile(leading: Icon(Icons.grid_on_rounded), title: Text('Share my top 9'))),
               PopupMenuItem(value: 'one', child: ListTile(leading: Icon(Icons.looks_one_rounded), title: Text('Share my #1'))),
               PopupMenuDivider(),
@@ -142,6 +144,8 @@ extension on _RankingScreenState {
     }
     final messenger = ScaffoldMessenger.of(context);
     switch (action) {
+      case 'bracket':
+        context.push('/bracket');
       case 'top9':
         if (rated.length < 9) {
           messenger.showSnackBar(const SnackBar(content: Text('Rank at least 9 photos first.')));
