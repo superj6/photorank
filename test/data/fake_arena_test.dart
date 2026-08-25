@@ -37,6 +37,7 @@ void main() {
     expect((await api.leaderboard(day: DateTime.now().toUtc().subtract(const Duration(days: 1)))).length, 12);
     expect((await api.myHistory()).length, greaterThanOrEqualTo(6));
     final room = await api.createRoom('Family');
-    expect((await api.leaderboard(roomId: room.id)).length, 4);
+    expect((await api.leaderboard(roomId: room.id)), isEmpty, reason: 'room board hidden until you enter and rate there');
+    expect((await api.status(roomId: room.id)).hasEntry, isFalse);
   });
 }
