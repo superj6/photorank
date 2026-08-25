@@ -3,7 +3,7 @@ import 'dart:math';
 import '../dealer/photo_state.dart';
 
 /// Browse channels. Each is a different way of letting the ranking pick.
-enum Channel { topShelf, wildcard, timeMachine, deepCuts, rising, thisDay }
+enum Channel { topShelf, wildcard, timeMachine, deepCuts, rising, thisDay, collection }
 
 /// Draws photos with probability shaped by their rank.
 class RankSampler {

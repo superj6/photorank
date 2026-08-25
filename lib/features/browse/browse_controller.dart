@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/dealer/photo_state.dart';
 import '../../core/rating/observation.dart';
+import '../../core/sampler/collections.dart';
 import '../../core/sampler/rank_sampler.dart';
 
 class BrowseState {
@@ -81,8 +82,15 @@ class BrowseController extends Notifier<BrowseState> {
           label = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
         }
       case Channel.rising:
+        final axis = await ref.read(axisIdProvider.future);
+        final movers = await ref.read(beatRepoProvider).moversSince(axis, DateTime.now().subtract(const Duration(days: 7)));
+        final up = movers.where((m) => m.delta >= 3).map((m) => m.photoId).toSet();
+        final risers = pool.where((p) => up.contains(p.id)).toList()..sort((a, b) => b.mu.compareTo(a.mu));
+        next = risers.where((p) => !_seen.contains(p.id)).take(_pageSize).toList();
       case Channel.thisDay:
-        next = sampler.sample(source, count: _pageSize, temperature: 120, exclude: _seen);
+        next = thisDay(pool, DateTime.now()).where((p) => !_seen.contains(p.id)).take(_pageSize).toList();
+      case Channel.collection:
+        next = const [];
     }
     _seen.addAll(next.map((p) => p.id));
     final replace = state.channel == Channel.timeMachine;
@@ -105,6 +113,18 @@ class BrowseController extends Notifier<BrowseState> {
       await more();
     }
   }
+
+  /// Open a fixed, ranked list (an auto-collection) in the Flow.
+  void openCollection(Collection c, List<PhotoState> pool) {
+    final byId = {for (final p in pool) p.id: p};
+    final items = [for (final id in c.ids) if (byId[id] != null) byId[id]!];
+    _seen
+      ..clear()
+      ..addAll(c.ids);
+    state = BrowseState(channel: Channel.collection, items: items, momentLabel: c.title);
+  }
+
+  Future<List<Collection>> collections() async => buildCollections(await _pool());
 
   /// A light "feeling it" from the Flow.
   Future<void> heart(int photoId) async {
