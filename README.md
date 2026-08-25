@@ -46,11 +46,14 @@ Browse your ranking as a Flow, auto-collections, a Top-16 bracket, and share car
 - **Pass the phone**: a friend plays ten cards on your settled photos —
   "Do we agree?" or "Do you know me?" — with an agreement score, the photos
   you disagree on, and a share card. Their answers never touch your ranking.
-- **Arena** (opt-in, online): enter one photo a day, rate other people's,
-  watch the live global board and private rooms, keep a history of finishes.
-  Backed by Supabase (`supabase/`); configured with
-  `--dart-define=SUPABASE_URL=… --dart-define=SUPABASE_ANON_KEY=…`. Debug
-  builds without keys use an in-memory fake with bot players.
+- **Arena** (opt-in, online): one photo a day, and it must have been taken
+  that day. After entering you rate one set of other people's photos (up to
+  10 duels) — only then does today's board open to you, so nobody sees the
+  standings before contributing. Days close at 00:00 UTC; past boards are
+  final and public. Private rooms by invite code, follow players for a
+  Friends filter, report/block. "Your arena" shows every entry with where it
+  finished, best days, streak and average percentile. Backed by Supabase
+  (`supabase/`); see *Arena backend* below.
 - **Notifications**: opt-in daily/weekly reminders, a daily "enter today's
   arena" nudge at a chosen hour (skipped on days you already entered), and
   server pushes when a day closes ("Your photo finished #12") via FCM — see
@@ -99,6 +102,24 @@ tool/emulator.sh run                          # flutter run on the emulator
 Note: Android's MediaProvider ignores EXIF `DateTimeOriginal` unless
 `OffsetTimeOriginal` is also present (or the date is within a day of the file
 mtime). The seed generator writes both; real camera JPEGs already do.
+
+## Arena backend (local or cloud)
+
+The whole backend runs on this machine with Docker: `sg docker -c "supabase start"`
+in the repo applies `supabase/migrations/*` (Postgres, Auth, Storage, Studio
+at http://127.0.0.1:54323). Then:
+
+```sh
+tool/arena_local.sh apk emulator   # build + install, pointed at http://10.0.2.2:54321
+tool/arena_local.sh apk phone      # same, pointed at this PC's LAN IP (phone on the same Wi-Fi)
+docker exec -i supabase_db_photorank psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/arena_scenario.sql
+```
+
+The scenario prints `NOTICE: ok: …` for every rule (today-only photos, one
+set unlocks the board, self-rating rejected, rooms, reports, day close,
+result pushes). For real users point the same migrations at a Supabase cloud
+project (`supabase db push`) — details, cron jobs and push setup in
+[`supabase/README.md`](supabase/README.md).
 
 ## Run on an Android phone
 
