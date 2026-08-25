@@ -4,6 +4,23 @@ A tiny game that sorts your camera roll. Every swipe makes your favourites
 clearer. Nothing is ever deleted, hidden, or uploaded — photos never leave the
 phone; only ratings are stored.
 
+## What it looks like
+
+Six ways to decide — Duel / Challenger, Vibe check, Rate, Best of burst, Sort three:
+
+![Play mechanics](docs/screenshots/play.png)
+
+Beats between cards keep it fresh — your Top 3, a new #1, a mode unlocking — and every hand ends in a reveal:
+
+![Beats and summary](docs/screenshots/beats.png)
+
+Browse your ranking as a Flow, auto-collections, a Top-16 bracket, and share cards:
+
+![Browse, collections, bracket, share](docs/screenshots/explore.png)
+
+*Captured on the Android emulator with generated placeholder images (see
+`tool/make_seed_photos.py`); with a real library the cards are your photos.*
+
 ## How it works
 
 - **Play** deals a hand of ~20 cards: Duel, Vibe check (feeling it / not
