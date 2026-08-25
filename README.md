@@ -105,6 +105,22 @@ flutter run --release  # smooth animations, real performance
 Or install the prebuilt debug APK: `flutter build apk --debug` →
 `build/app/outputs/flutter-apk/app-debug.apk` (`adb install -r <apk>`).
 
+## Release / Play Store
+
+Release builds are signed with an upload key kept **outside** the repo
+(`~/keys/photorank-upload.jks`, referenced from the git-ignored
+`android/key.properties`). Back that keystore up — losing it means you can
+never update the app on Play.
+
+```sh
+flutter build appbundle --release   # → build/app/outputs/bundle/release/app-release.aab (upload this to Play)
+flutter build apk --release         # → build/app/outputs/flutter-apk/app-release.apk (sideload / GitHub release)
+```
+
+Store copy, data-safety answers, and the release checklist live in
+[`docs/store/LISTING.md`](docs/store/LISTING.md); the privacy policy is
+[`docs/PRIVACY.md`](docs/PRIVACY.md).
+
 ## Layout
 
 ```
