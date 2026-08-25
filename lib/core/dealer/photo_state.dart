@@ -12,6 +12,7 @@ class PhotoState {
     this.observations = 0,
     this.views = 0,
     this.mediaId,
+    this.landscape = false,
   });
 
   final int id;
@@ -25,6 +26,9 @@ class PhotoState {
 
   /// Device media id (photo_manager asset id); null in pure-core tests.
   final String? mediaId;
+
+  /// Wider than tall.
+  final bool landscape;
 
   double get mu => rating.mu;
   double get rd => rating.rd;
@@ -41,5 +45,6 @@ class PhotoState {
         observations: observations,
         views: views ?? this.views,
         mediaId: mediaId,
+        landscape: landscape,
       );
 }

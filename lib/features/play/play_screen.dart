@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/rating/observation.dart';
+import '../beats/beat_overlay.dart';
 import 'cards/burst_card.dart';
 import 'cards/duel_card.dart';
 import 'cards/rate_card.dart';
@@ -44,6 +45,20 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     ref.listen(sessionProvider.select((s) => s.current), (prev, next) {
       if (next != null) _precache(next.photoIds, s);
     });
+    if (s.beat != null) {
+      return Scaffold(
+        body: SafeArea(
+          child: BeatOverlay(
+            key: ValueKey('beat-${s.beat!.id}'),
+            beat: s.beat!,
+            onContinue: ctl.dismissBeat,
+            onCta: s.beat!.cta == null ? null : ctl.acceptCta,
+            onShared: () => ref.read(beatRepoProvider).markShared(s.beat!.id!),
+            continueLabel: s.status == SessionStatus.finished ? 'See summary' : 'Continue',
+          ),
+        ),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: switch (s.status) {

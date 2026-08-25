@@ -2,12 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/beats/unlocks.dart';
 import '../core/dealer/dealer.dart';
 import '../core/rating/observation.dart';
 import '../core/sampler/rank_sampler.dart';
 import '../data/db/database.dart';
 import '../data/media/library_scanner.dart';
 import '../data/media/thumbs.dart';
+import '../data/repo/beat_repo.dart';
 import '../data/repo/photo_repo.dart';
 import '../data/repo/ranking_repo.dart';
 
@@ -22,6 +24,34 @@ final rankingRepoProvider = Provider((ref) => RankingRepo(ref.watch(dbProvider))
 final scannerProvider = Provider((ref) => LibraryScanner(ref.watch(photoRepoProvider)));
 final thumbCacheProvider = Provider((ref) => ThumbCache());
 final samplerProvider = Provider((ref) => RankSampler());
+final beatRepoProvider = Provider((ref) => BeatRepo(ref.watch(dbProvider)));
+
+const prefUnlockAll = 'unlock_all';
+
+/// Lifetime decisions; refreshed whenever a session invalidates it.
+final decisionsProvider = FutureProvider<int>((ref) => ref.watch(beatRepoProvider).decisionCount());
+
+class UnlockAll extends Notifier<bool> {
+  @override
+  bool build() {
+    ref.read(photoRepoProvider).pref(prefUnlockAll).then((v) => state = v == '1');
+    return false;
+  }
+
+  Future<void> set(bool v) async {
+    state = v;
+    await ref.read(photoRepoProvider).setPref(prefUnlockAll, v ? '1' : '0');
+  }
+}
+
+final unlockAllProvider = NotifierProvider<UnlockAll, bool>(UnlockAll.new);
+
+/// Modes currently open to this user.
+final unlockedModesProvider = FutureProvider<Set<GameMode>>((ref) async {
+  final all = ref.watch(unlockAllProvider);
+  final decisions = await ref.watch(decisionsProvider.future);
+  return Unlocks.unlocked(decisions, all: all);
+});
 
 final axisIdProvider = FutureProvider<int>((ref) => ref.watch(dbProvider).defaultAxisId());
 

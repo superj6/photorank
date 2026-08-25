@@ -45,6 +45,7 @@ class BeatInput {
     this.themedAllowed = false,
     this.changes = const StateChanges(),
     this.lateGame = false,
+    this.firstBeat = false,
   });
 
   final int decisions;
@@ -68,6 +69,9 @@ class BeatInput {
   final StateChanges changes;
   final bool lateGame;
 
+  /// No beat has ever fired: the first one is always "Your first Top 3".
+  final bool firstBeat;
+
   List<PhotoState> get rated => states.where((s) => s.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
   int get settledCount => states.where((s) => s.rating.confidence >= 0.5).length;
 }
@@ -86,6 +90,18 @@ class BeatEngine {
     if (due.tier == BeatTier.major) return _major(due.kind!, input);
     return _minor(input);
   }
+
+  /// Build a specific kind regardless of schedule (debug previews, welcome back).
+  Beat? forceKind(BeatKind kind, BeatInput i) => switch (kind) {
+        BeatKind.standings => _standings(i),
+        BeatKind.mover => _mover(i),
+        BeatKind.headToHead => _headToHead(i),
+        BeatKind.deepCut => _deepCut(i),
+        BeatKind.thenVsNow => _thenVsNow(i),
+        BeatKind.themedHand => _themed(i),
+        BeatKind.welcomeBack => null,
+        _ => _major(kind, i),
+      };
 
   Beat? _major(BeatKind kind, BeatInput i) {
     final c = i.changes;
@@ -155,6 +171,7 @@ class BeatEngine {
   }
 
   Beat? _minor(BeatInput i) {
+    if (i.firstBeat) return _standings(i);
     final recent = i.recentKinds.take(4).toSet();
     final candidates = <(BeatKind, Beat? Function())>[
       if (i.themedAllowed && i.minorBeatsSoFar % 4 == 3) (BeatKind.themedHand, () => _themed(i)),

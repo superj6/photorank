@@ -1,4 +1,7 @@
+import '../dealer/deck_theme.dart';
 import '../rating/observation.dart';
+
+export '../dealer/deck_theme.dart';
 
 /// What kind of moment this is.
 enum BeatKind {
@@ -18,9 +21,6 @@ enum BeatKind {
 }
 
 enum BeatTier { minor, major }
-
-/// Themed 10-card decks offered by the Themed hand beat.
-enum DeckTheme { oneTrip, sameMonth, landscapes, rerankTop }
 
 /// An optional action the last page offers; the session controller knows how
 /// to turn each into the next card(s).

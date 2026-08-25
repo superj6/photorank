@@ -32,6 +32,14 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     }
     if (scope == null || !mounted) return;
     ref.read(scanProvider.notifier).start(scope);
+    _snapshot();
+  }
+
+  Future<void> _snapshot() async {
+    final axis = await ref.read(axisIdProvider.future);
+    final states = await ref.read(rankingRepoProvider).photoStates(axis);
+    if (!mounted) return;
+    await ref.read(beatRepoProvider).writeDailySnapshot(states);
   }
 
   @override

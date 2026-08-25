@@ -1,9 +1,11 @@
 import 'dart:math';
 
 import '../rating/observation.dart';
+import 'deck_theme.dart';
 import 'photo_state.dart';
 import 'priority.dart';
 
+export 'deck_theme.dart';
 export 'photo_state.dart';
 export 'priority.dart';
 
@@ -204,6 +206,83 @@ class Dealer {
       }
     }
     return cards;
+  }
+
+  /// A themed deck: [count] cards drawn from one slice of the library.
+  /// Returns an empty list when the theme has too little material.
+  List<Card> dealDeck(
+    List<PhotoState> photos, {
+    required DeckTheme theme,
+    int count = 10,
+    required DateTime now,
+    Set<GameMode>? allowed,
+  }) {
+    final pool = _deckPool(photos, theme);
+    if (pool.length < 4) return const [];
+    final priority = {for (final p in pool) p.id: priorityOf(p, now, _rng)};
+    final ordered = [...pool]..sort((a, b) => priority[b.id]!.compareTo(priority[a.id]!));
+    final used = <int>{};
+    final cards = <Card>[];
+    final vibeOk = allowed == null || allowed.contains(GameMode.vibeCheck);
+
+    List<int> take(int n) {
+      final out = <int>[];
+      for (final p in ordered) {
+        if (used.contains(p.id)) continue;
+        out.add(p.id);
+        if (out.length == n) break;
+      }
+      if (out.length < n) return const [];
+      used.addAll(out);
+      return out;
+    }
+
+    if (theme == DeckTheme.rerankTop) {
+      while (cards.length < count) {
+        final trio = take(3);
+        if (trio.isEmpty) break;
+        cards.add(Card(mode: GameMode.rerankTop, photoIds: trio..shuffle(_rng)));
+      }
+      used.clear();
+    }
+    var i = 0;
+    while (cards.length < count) {
+      final wantVibe = vibeOk && i.isOdd;
+      final ids = take(wantVibe ? 1 : 2);
+      if (ids.isEmpty) {
+        if (used.length >= pool.length) break;
+        i++;
+        continue;
+      }
+      cards.add(Card(mode: wantVibe ? GameMode.vibeCheck : GameMode.duel, photoIds: ids));
+      i++;
+    }
+    return cards;
+  }
+
+  List<PhotoState> _deckPool(List<PhotoState> photos, DeckTheme theme) {
+    switch (theme) {
+      case DeckTheme.landscapes:
+        return photos.where((p) => p.landscape).toList();
+      case DeckTheme.rerankTop:
+        final rated = photos.where((p) => p.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu));
+        return rated.take(10).toList();
+      case DeckTheme.oneTrip:
+      case DeckTheme.sameMonth:
+        final groups = <String, List<PhotoState>>{};
+        for (final p in photos) {
+          final t = p.takenAt;
+          if (t == null) continue;
+          final key = theme == DeckTheme.oneTrip ? '${t.year}-${t.month}-${t.day}' : '${t.year}-${t.month}';
+          groups.putIfAbsent(key, () => []).add(p);
+        }
+        final big = groups.values.where((g) => g.length >= 6).toList();
+        if (big.isEmpty) return const [];
+        // Prefer groups with the most still-uncertain photos.
+        big.sort((a, b) => b.fold(0.0, (s, p) => s + p.rd).compareTo(a.fold(0.0, (s, p) => s + p.rd)));
+        final top = big.take(3).toList();
+        return top[_rng.nextInt(top.length)];
+    }
   }
 
   Map<GameMode, double> _enabledModes(DealerConfig c) => {

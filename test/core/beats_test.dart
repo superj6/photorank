@@ -71,6 +71,20 @@ void main() {
       expect((b!.pages.single as StandingsPage).top, [0, 1, 2]);
     });
 
+    test('the very first beat is standings even when a mover is available', () {
+      final b = e.build(
+        const BeatDue.minor(),
+        BeatInput(
+          decisions: 12,
+          states: rated(5),
+          now: now,
+          firstBeat: true,
+          moversThisHand: [MoverInfo(photoId: 3, before: Rating.initial, after: const Rating(mu: 1870, rd: 40))],
+        ),
+      );
+      expect(b?.kind, BeatKind.standings);
+    });
+
     test('standings needs three rated photos', () {
       expect(e.build(const BeatDue.minor(), BeatInput(decisions: 12, states: rated(2, unratedExtra: 5), now: now)), isNull);
     });

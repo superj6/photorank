@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
@@ -34,6 +35,13 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your ranking'),
+        actions: [
+          IconButton(
+            tooltip: 'Moments',
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: () => context.push('/moments'),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: SizedBox(

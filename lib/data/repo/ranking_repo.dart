@@ -151,6 +151,7 @@ class RankingRepo {
       observations: r?.observations ?? 0,
       views: p.views,
       mediaId: p.mediaId,
+      landscape: p.width > p.height,
     );
   }
 
