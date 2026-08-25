@@ -142,15 +142,6 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       children: [
-                        for (final c in const [Channel.topShelf, Channel.wildcard, Channel.timeMachine, Channel.deepCuts, Channel.rising, Channel.thisDay])
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(_name(c)),
-                              selected: _mode == _Mode.flow && s.channel == c,
-                              onSelected: (_) => _switch(c),
-                            ),
-                          ),
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
@@ -175,6 +166,15 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                             },
                           ),
                         ),
+                        for (final c in const [Channel.topShelf, Channel.wildcard, Channel.timeMachine, Channel.deepCuts, Channel.rising, Channel.thisDay])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(_name(c)),
+                              selected: _mode == _Mode.flow && s.channel == c,
+                              onSelected: (_) => _switch(c),
+                            ),
+                          ),
                       ],
                     ),
                   ),

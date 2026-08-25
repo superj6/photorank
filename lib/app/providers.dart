@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,11 +56,48 @@ final unlockedModesProvider = FutureProvider<Set<GameMode>>((ref) async {
 
 final axisIdProvider = FutureProvider<int>((ref) => ref.watch(dbProvider).defaultAxisId());
 
-/// Live ranking on the default axis, best first.
+/// Live ranking on the default axis, best first. Debounced: every card
+/// writes ratings, and a 20k-photo join per card would be wasteful.
 final rankingProvider = StreamProvider<List<PhotoState>>((ref) async* {
   final axis = await ref.watch(axisIdProvider.future);
-  yield* ref.watch(rankingRepoProvider).watchRanking(axis);
+  yield* debounce(ref.watch(rankingRepoProvider).watchRanking(axis), const Duration(milliseconds: 400));
 });
+
+/// Emits the latest event once [window] has passed without a newer one; the
+/// first event is emitted immediately.
+Stream<T> debounce<T>(Stream<T> source, Duration window) {
+  late StreamController<T> out;
+  Timer? timer;
+  T? pending;
+  var hasPending = false;
+  var first = true;
+  StreamSubscription<T>? sub;
+  out = StreamController<T>(
+    onListen: () {
+      sub = source.listen((e) {
+        if (first) {
+          first = false;
+          out.add(e);
+          return;
+        }
+        pending = e;
+        hasPending = true;
+        timer?.cancel();
+        timer = Timer(window, () {
+          if (hasPending) {
+            hasPending = false;
+            out.add(pending as T);
+          }
+        });
+      }, onError: out.addError, onDone: out.close);
+    },
+    onCancel: () {
+      timer?.cancel();
+      return sub?.cancel();
+    },
+  );
+  return out.stream;
+}
 
 final photoRowProvider =
     FutureProvider.family<PhotoRow?, int>((ref, id) => ref.watch(photoRepoProvider).byId(id));
