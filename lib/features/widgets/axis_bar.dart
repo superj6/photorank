@@ -60,7 +60,6 @@ Future<void> addAxisDialog(BuildContext context, WidgetRef ref) async {
           const SizedBox(height: 12),
           TextField(
             controller: controller,
-            autofocus: true,
             textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(hintText: 'Or type your own…'),
             onSubmitted: (v) => Navigator.pop(ctx, v),
