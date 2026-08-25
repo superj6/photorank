@@ -193,9 +193,10 @@ class Dealer {
       cards.add(card);
     }
 
-    // Delight rule: at least one current top-tier photo per hand.
+    // Delight rule: at least one current top-tier photo per (real) hand.
+    // Tiny hands (a single CTA card) keep the mode they were asked for.
     final hasTop = cards.any((c) => c.photoIds.any(topTier.contains));
-    if (!hasTop && topTier.isNotEmpty && cards.isNotEmpty) {
+    if (!hasTop && topTier.isNotEmpty && cards.length >= 5) {
       final top = next(where: (p) => topTier.contains(p.id));
       if (top != null) {
         final b = opponentFor(top);

@@ -111,6 +111,15 @@ void main() {
       expect(cards.any((c) => c.mode == GameMode.challenger), isFalse);
     });
 
+    test('a one-card hand keeps the requested mode (CTA cards)', () {
+      final photos = library(300, rd: 60);
+      for (final mode in [GameMode.rate, GameMode.vibeCheck, GameMode.sort3]) {
+        final cards = Dealer(rng: Random(8)).dealHand(photos,
+            config: DealerConfig(modeWeights: {mode: 1}, handSize: 1), now: now);
+        expect(cards.single.mode, mode);
+      }
+    });
+
     test('empty library deals nothing', () {
       expect(Dealer().dealHand([], config: const DealerConfig(), now: now), isEmpty);
     });

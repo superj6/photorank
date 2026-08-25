@@ -251,7 +251,7 @@ class BeatEngine {
   }
 
   Beat? _thenVsNow(BeatInput i) {
-    if (i.sessionCount < 3 || i.firstSessionAt == null || i.thenRatings.isEmpty) return null;
+    if (i.sessionCount < 3 || i.decisions < 25 || i.firstSessionAt == null || i.thenRatings.isEmpty) return null;
     PhotoState? best;
     var bestDelta = 0.0;
     for (final s in i.rated) {

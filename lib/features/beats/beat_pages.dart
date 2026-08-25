@@ -32,7 +32,7 @@ class BeatPageView extends StatelessWidget {
       ThenVsNowPage p => _Frame(
           eyebrow: 'Then vs now',
           title: '${p.decisionsBetween} decisions later',
-          footer: 'Started at ${p.scoreThen.round()}, now ${p.scoreNow.round()} · ${p.daysBetween} days',
+          footer: 'Started at ${p.scoreThen.round()}, now ${p.scoreNow.round()} · ${_days(p.daysBetween)}',
           child: _Hero(id: p.photoId, badge: '${p.scoreThen.round()} → ${p.scoreNow.round()}'),
         ),
       HeadToHeadPage p => _Frame(
@@ -125,6 +125,8 @@ class BeatPageView extends StatelessWidget {
         ),
     };
   }
+
+  static String _days(int d) => d == 0 ? 'since today' : d == 1 ? 'since yesterday' : 'over $d days';
 
   static IconData _modeIcon(GameMode m) => switch (m) {
         GameMode.duel => Icons.compare_arrows_rounded,
