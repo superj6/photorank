@@ -40,6 +40,10 @@ Arena is an opt-in daily game. Nothing below happens unless you enter a photo.
 - **Deletion:** withdraw any entry from the app and the photo is deleted
   from the server. Uninstalling stops the account being used; contact us to
   delete the account and its history.
+- **Notifications (optional):** if you enable result notifications, the app
+  registers a push token for your device with our server so it can tell you
+  where your photo finished. The token identifies the device only and is
+  deleted when it stops working or when your account is deleted.
 - **Moderation:** entries can be reported and blocked in the app. Reported
   photos are hidden pending review; accounts posting abusive or illegal
   content are banned. You must be 13 or older to use Arena.

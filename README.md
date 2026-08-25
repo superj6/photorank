@@ -51,6 +51,10 @@ Browse your ranking as a Flow, auto-collections, a Top-16 bracket, and share car
   Backed by Supabase (`supabase/`); configured with
   `--dart-define=SUPABASE_URL=… --dart-define=SUPABASE_ANON_KEY=…`. Debug
   builds without keys use an in-memory fake with bot players.
+- **Notifications**: opt-in daily/weekly reminders, a daily "enter today's
+  arena" nudge at a chosen hour (skipped on days you already entered), and
+  server pushes when a day closes ("Your photo finished #12") via FCM — see
+  `supabase/README.md`.
 - **Beats** (`lib/core/beats`) keep play fresh: every 20–35 decisions a short
   in-play moment appears — your Top 3, a climber, a head-to-head to settle, a
   deep cut, a themed 10-card deck — plus majors on milestones, a new #1, the
