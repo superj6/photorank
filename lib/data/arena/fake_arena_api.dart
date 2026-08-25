@@ -198,6 +198,8 @@ class FakeArenaApi implements ArenaApi {
   @override
   Future<void> claimUsername(String username) async => _me = ArenaProfile(id: 'me', username: username);
   @override
+  Future<void> registerDeviceToken(String token, {required String platform}) async {}
+  @override
   Future<void> follow(String userId, {bool unfollow = false}) async {}
   @override
   Future<void> block(String userId) async {}

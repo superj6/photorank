@@ -27,6 +27,7 @@ abstract class ArenaApi {
   Future<Room> joinRoom(String code);
 
   Future<void> claimUsername(String username);
+  Future<void> registerDeviceToken(String token, {required String platform});
   Future<void> follow(String userId, {bool unfollow = false});
   Future<void> block(String userId);
   Future<void> report(String entryId, String reason);

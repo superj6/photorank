@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart';
 
+import '../../app/notifications.dart';
 import '../../app/providers.dart';
+import '../../app/push.dart';
 import '../../config/arena_config.dart';
 import '../../data/arena/arena_api.dart';
 import '../../data/arena/arena_models.dart';
@@ -20,6 +22,8 @@ final arenaApiProvider = FutureProvider<ArenaApi?>((ref) async {
 });
 
 const prefArenaConsent = 'arena_consent';
+const prefArenaReminder = 'notify_arena';
+const prefArenaReminderHour = 'notify_arena_hour';
 
 class ArenaState {
   const ArenaState({
@@ -104,6 +108,7 @@ class ArenaController extends Notifier<ArenaState> {
       final rooms = await api.myRooms();
       state = state.copyWith(profile: profile, rooms: rooms, consent: consent);
       await refresh();
+      Push.register(api);
     } catch (e) {
       state = state.copyWith(loading: false, error: _msg(e));
     }
@@ -117,6 +122,7 @@ class ArenaController extends Notifier<ArenaState> {
       final entry = status.unlocked ? await api.myEntry(roomId: state.roomId) : null;
       final board = status.unlocked ? await api.leaderboard(roomId: state.roomId, scope: state.scope) : const <BoardRow>[];
       state = state.copyWith(status: status, myEntry: entry, clearEntry: entry == null, board: board, loading: false, clearError: true);
+      if (status.hasEntry && state.roomId == null) _skipNudgeToday();
     } catch (e) {
       state = state.copyWith(loading: false, error: _msg(e));
     }
@@ -236,6 +242,13 @@ class ArenaController extends Notifier<ArenaState> {
   Future<void> block(String userId) async {
     await (await _api)?.block(userId);
     await refresh();
+  }
+
+  Future<void> _skipNudgeToday() async {
+    final prefs = ref.read(photoRepoProvider);
+    if (await prefs.pref(prefArenaReminder) != '1') return;
+    final hour = int.tryParse(await prefs.pref(prefArenaReminderHour) ?? '') ?? 18;
+    await Notifications.setArenaReminder(true, hour: hour, skipToday: true);
   }
 
   static String _msg(Object e) {

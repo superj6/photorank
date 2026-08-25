@@ -158,6 +158,7 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: 'A nudge when your week in photos is ready',
             apply: Notifications.setWeeklyRecap,
           ),
+          const _ArenaReminderTile(),
           _NotifyToggle(
             prefKey: 'notify_daily',
             title: 'Daily hand',
@@ -345,6 +346,45 @@ class _ArenaProfileTile extends ConsumerWidget {
         final u = v?.trim().toLowerCase();
         if (u != null && RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(u)) await ref.read(arenaProvider.notifier).claimUsername(u);
       },
+    );
+  }
+}
+
+class _ArenaReminderTile extends ConsumerWidget {
+  const _ArenaReminderTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final on = ref.watch(prefProvider(prefArenaReminder)).value == '1';
+    final hour = int.tryParse(ref.watch(prefProvider(prefArenaReminderHour)).value ?? '') ?? 18;
+    Future<void> apply(bool v, int h) async {
+      if (v && !await Notifications.requestPermission()) {
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notifications are off for PhotoRank in system settings.')));
+        return;
+      }
+      final entered = ref.read(arenaProvider).status.hasEntry;
+      await Notifications.setArenaReminder(v, hour: h, skipToday: entered);
+      final prefs = ref.read(photoRepoProvider);
+      await prefs.setPref(prefArenaReminder, v ? '1' : '0');
+      await prefs.setPref(prefArenaReminderHour, '$h');
+      ref.invalidate(prefProvider(prefArenaReminder));
+      ref.invalidate(prefProvider(prefArenaReminderHour));
+    }
+    return SwitchListTile(
+      title: const Text('Arena: enter today\'s photo'),
+      subtitle: Row(children: [
+        Text(on ? 'Daily at ' : 'A daily nudge; skipped on days you already entered'),
+        if (on)
+          InkWell(
+            onTap: () async {
+              final t = await showTimePicker(context: context, initialTime: TimeOfDay(hour: hour, minute: 0));
+              if (t != null) await apply(true, t.hour);
+            },
+            child: Text('${hour.toString().padLeft(2, '0')}:00  (change)', style: const TextStyle(color: Color(0xFFFF6B4A), fontWeight: FontWeight.w600)),
+          ),
+      ]),
+      value: on,
+      onChanged: (v) => apply(v, hour),
     );
   }
 }

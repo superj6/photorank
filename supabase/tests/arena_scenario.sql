@@ -177,3 +177,18 @@ do $$ begin
 end $$;
 select pg_temp.as_user(2);
 select day, final_rank, total from public.my_history(10);
+-- Pushes: a user with a device token gets a queued result when a day closes.
+select pg_temp.as_user(2);
+select public.register_device_token('fcm-test-token', 'android');
+select set_config('role', 'postgres', false);
+insert into public.days (day, closes_at) values (public.arena_today() - 2, (public.arena_today() - 1)::timestamp at time zone 'utc');
+insert into public.entries (day, user_id, storage_path, mu, rd, duels, wins, taken_at)
+values (public.arena_today() - 2, pg_temp.uid(2), pg_temp.uid(2)::text || '/z.jpg', 1650, 60, 8, 6, now() - interval '2 days'),
+       (public.arena_today() - 2, pg_temp.uid(3), pg_temp.uid(3)::text || '/z.jpg', 1450, 60, 8, 2, now() - interval '2 days');
+select public.close_days() as closed_for_push;
+select user_id = pg_temp.uid(2) as queued_for_u2, title, body from public.notification_outbox;
+do $$ begin
+  if (select count(*) from public.notification_outbox) <> 1 then raise exception 'FAIL: expected exactly one queued push (only u2 has a token)'; end if;
+  if (select title from public.notification_outbox limit 1) <> 'You won today''s arena!' then raise exception 'FAIL: wrong title'; end if;
+  raise notice 'ok: result push queued for the entrant with a device';
+end $$;

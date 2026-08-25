@@ -119,6 +119,10 @@ class SupabaseArenaApi implements ArenaApi {
   Future<void> claimUsername(String username) => _client.rpc('claim_username', params: {'p_username': username});
 
   @override
+  Future<void> registerDeviceToken(String token, {required String platform}) =>
+      _client.rpc('register_device_token', params: {'p_token': token, 'p_platform': platform});
+
+  @override
   Future<void> follow(String userId, {bool unfollow = false}) async {
     final me = _client.auth.currentUser!.id;
     if (unfollow) {

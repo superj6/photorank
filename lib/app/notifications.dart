@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 /// Opt-in local reminders. Nothing is scheduled unless the user turns a
 /// toggle on in Settings.
@@ -11,6 +14,8 @@ class Notifications {
 
   static const _weeklyId = 1;
   static const _dailyId = 2;
+  static const _arenaId = 3;
+  static bool _tzReady = false;
   static const _channel = AndroidNotificationDetails(
     'photorank_reminders',
     'Reminders',
@@ -55,6 +60,40 @@ class Notifications {
       repeatInterval: RepeatInterval.weekly,
       notificationDetails: const NotificationDetails(android: _channel),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  static Future<void> _initTz() async {
+    if (_tzReady) return;
+    tzdata.initializeTimeZones();
+    try {
+      final name = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(name.identifier));
+    } catch (_) {
+      tz.setLocalLocation(tz.UTC);
+    }
+    _tzReady = true;
+  }
+
+  /// Daily "enter today's arena" at [hour] local time. Pass [skipToday] when
+  /// the user has already entered, so the next one fires tomorrow.
+  static Future<void> setArenaReminder(bool on, {int hour = 18, bool skipToday = false}) async {
+    await init();
+    if (!_ready) return;
+    await _plugin.cancel(id: _arenaId);
+    if (!on) return;
+    await _initTz();
+    final now = tz.TZDateTime.now(tz.local);
+    var at = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour);
+    if (skipToday || !at.isAfter(now)) at = at.add(const Duration(days: 1));
+    await _plugin.zonedSchedule(
+      id: _arenaId,
+      title: 'Today\'s arena is open',
+      body: 'Enter a photo from today, rate a set, and see where it lands.',
+      scheduledDate: at,
+      notificationDetails: const NotificationDetails(android: _channel),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
