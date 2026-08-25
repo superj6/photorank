@@ -25,6 +25,15 @@ class SupabaseArenaApi implements ArenaApi {
 
   @override
   Future<ArenaProfile> signIn() async {
+    if (_client.auth.currentUser != null) {
+      // A stored session can outlive its account (purged, or a reset dev
+      // database). Verify it; if the server no longer knows us, start fresh.
+      try {
+        await _client.auth.getUser();
+      } on AuthException {
+        await _client.auth.signOut();
+      }
+    }
     if (_client.auth.currentUser == null) await _client.auth.signInAnonymously();
     final u = _client.auth.currentUser!;
     final row = await _client.from('profiles').select('username, display_name').eq('id', u.id).maybeSingle();

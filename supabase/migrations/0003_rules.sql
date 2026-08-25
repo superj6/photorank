@@ -23,6 +23,7 @@ begin
     raise exception 'not a member of this room';
   end if;
   if p_storage_path not like uid::text || '/%' then raise exception 'bad storage path'; end if;
+  insert into public.profiles (id) values (uid) on conflict do nothing;
   -- "From today": within the last 36 hours (covers any local timezone), not in the future.
   if p_taken_at is null or p_taken_at < now() - interval '36 hours' or p_taken_at > now() + interval '2 hours' then
     raise exception 'photo must be taken today';
@@ -164,3 +165,10 @@ begin
   end loop;
   return n;
 end $$;
+
+-- Self-heal a missing profile row (the auth trigger is the normal path).
+create or replace function public.ensure_profile() returns void
+language sql security definer set search_path = public as $$
+  insert into public.profiles (id) select auth.uid() where auth.uid() is not null on conflict do nothing
+$$;
+grant execute on function public.ensure_profile() to authenticated;
