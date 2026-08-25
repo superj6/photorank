@@ -5,6 +5,8 @@ import 'package:photo_manager/photo_manager.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/rating/glicko.dart';
+import '../share/share_cards.dart';
+import '../share/share_preview_screen.dart';
 
 final _detailProvider = FutureProvider.family<_Detail?, int>((ref, id) async {
   final axis = await ref.watch(axisIdProvider.future);
@@ -38,7 +40,21 @@ class PhotoDetailScreen extends ConsumerWidget {
     final cache = ref.watch(thumbCacheProvider);
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(backgroundColor: Colors.black),
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        actions: [
+          IconButton(
+            tooltip: 'Share',
+            icon: const Icon(Icons.ios_share_rounded),
+            onPressed: () {
+              final d = detail.value;
+              SharePreviewScreen.open(context,
+                  card: NumberOneCard(photoId: photoId, label: d != null && d.rank > 0 ? 'My #${d.rank} photo' : 'From my ranking'),
+                  filename: 'photorank-photo-$photoId.png');
+            },
+          ),
+        ],
+      ),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),

@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/dealer/photo_state.dart';
+import '../../data/media/favorites_sync.dart';
+import '../share/share_cards.dart';
+import '../share/share_preview_screen.dart';
 import '../shell/shell_screen.dart';
 import '../widgets/photo_tile.dart';
 
@@ -40,6 +43,18 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
             tooltip: 'Moments',
             icon: const Icon(Icons.auto_awesome),
             onPressed: () => context.push('/moments'),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Share & export',
+            onSelected: (v) => _action(context, v),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'top9', child: ListTile(leading: Icon(Icons.grid_on_rounded), title: Text('Share my top 9'))),
+              PopupMenuItem(value: 'one', child: ListTile(leading: Icon(Icons.looks_one_rounded), title: Text('Share my #1'))),
+              PopupMenuDivider(),
+              PopupMenuItem(value: 'fav10', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 10 as favourites'))),
+              PopupMenuItem(value: 'fav50', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 50 as favourites'))),
+              PopupMenuItem(value: 'album', child: ListTile(leading: Icon(Icons.photo_album_rounded), title: Text('Export Top 50 as album'))),
+            ],
           ),
         ],
         bottom: PreferredSize(
@@ -114,6 +129,51 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
         },
       ),
     );
+  }
+}
+
+extension on _RankingScreenState {
+  Future<void> _action(BuildContext context, String action) async {
+    final all = ref.read(rankingProvider).value ?? const [];
+    final rated = all.where((p) => p.observations > 0).toList();
+    if (rated.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Play a hand first.')));
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    switch (action) {
+      case 'top9':
+        if (rated.length < 9) {
+          messenger.showSnackBar(const SnackBar(content: Text('Rank at least 9 photos first.')));
+          return;
+        }
+        await SharePreviewScreen.open(context,
+            card: TopNineCard(ids: rated.take(9).map((p) => p.id).toList()), filename: 'photorank-top9.png');
+      case 'one':
+        await SharePreviewScreen.open(context,
+            card: NumberOneCard(photoId: rated.first.id, label: 'My #1 photo'), filename: 'photorank-number-one.png');
+      case 'fav10':
+      case 'fav50':
+        final n = action == 'fav10' ? 10 : 50;
+        final ids = rated.take(n).map((p) => p.mediaId).whereType<String>();
+        final done = await FavoritesSync.markFavorites(ids);
+        messenger.showSnackBar(SnackBar(content: Text(done == 0 ? 'Could not mark favourites on this device.' : 'Marked $done photos as favourites.')));
+      case 'album':
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Export as album?'),
+            content: const Text('Creates the album "${FavoritesSync.albumName}" with copies of your Top 50. Your originals are untouched.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Export')),
+            ],
+          ),
+        );
+        if (ok != true) return;
+        final done = await FavoritesSync.exportAlbum(rated.take(50).map((p) => p.mediaId).whereType<String>());
+        messenger.showSnackBar(SnackBar(content: Text('Exported $done photos to "${FavoritesSync.albumName}".')));
+    }
   }
 }
 
