@@ -13,7 +13,11 @@ every interaction is a ranking signal.
 
 ---
 
-## Phase 1 — A loop you return to (v0.2)  *← next*
+> Status 2026-08-24: Phases 1–3 below are implemented (except the real-phone
+> test and dealer tuning from real play), plus the in-play **beats** system
+> that replaced calendar-only recaps as the engagement layer. Phase 4+ is open.
+
+## Phase 1 — A loop you return to (v0.2)
 Goal: you open it unprompted for a week straight.
 - Real-phone test; debug overlay showing *why* each card was dealt.
 - Dealer tuning from real play; anchor spacing for stars; hand size.

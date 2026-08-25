@@ -16,6 +16,14 @@ phone; only ratings are stored.
   Time Machine, Deep Cuts) plus "Deal me 9". Double-tap ♥ is a light signal.
 - **Ranking** is the grid output; **Settings** controls the game mix, hand
   size and library scope.
+- **Recaps**: weekly / monthly / yearly ("your year") stories on the same page
+  system, surfaced as the first card after a period ends; "Show my year" in
+  Settings any time; opt-in weekly/daily reminders.
+- **Bracket**: Top 16 single elimination from the Ranking menu, with a
+  shareable bracket image. **Share cards**: Top 9 grid and "#1" card.
+  **Favourites**: mark Top 10/50 as system favourites or export an album.
+- **Widget**: "Today's Duel" on the home screen — tap a side to answer.
+- **Progress**: levels, streaks and badges in the hand summary and Settings.
 - **Beats** (`lib/core/beats`) keep play fresh: every 20–35 decisions a short
   in-play moment appears — your Top 3, a climber, a head-to-head to settle, a
   deep cut, a themed 10-card deck — plus majors on milestones, a new #1, the
@@ -85,5 +93,8 @@ lib/core/beats     beat.dart (pages/JSON), beat_scheduler.dart, beat_engine.dart
 lib/data/db        Drift schema (+ generated database.g.dart)
 lib/data/repo      PhotoRepo, RankingRepo (applyCard / undoCard)
 lib/data/media     LibraryScanner (photo_manager), ThumbCache
-lib/features       play/, beats/, browse/, ranking/, settings/, onboarding/, shell/
+lib/core/bracket   single-elimination bracket model
+lib/core/stats     levels and badges
+lib/features       play/, beats/, bracket/, browse/, share/, widget/, ranking/, settings/, onboarding/, shell/
+android/app/src/main/kotlin/.../DuelWidgetProvider.kt   home-screen widget
 ```
