@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'dart:async';
+
+import 'package:home_widget/home_widget.dart';
+
 import '../../app/providers.dart';
+import '../play/session_controller.dart';
+import '../widget/duel_widget.dart';
 
 /// Bottom-nav shell. Play is the default tab so the app opens into a hand.
 class ShellScreen extends ConsumerStatefulWidget {
@@ -15,11 +21,41 @@ class ShellScreen extends ConsumerStatefulWidget {
 }
 
 class _ShellScreenState extends ConsumerState<ShellScreen> {
+  StreamSubscription<Uri?>? _widgetTaps;
+
   @override
   void initState() {
     super.initState();
     // Incremental rescan on every launch so new shots join the game.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _rescan());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _rescan();
+      _widgetLaunch();
+    });
+  }
+
+  @override
+  void dispose() {
+    _widgetTaps?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _widgetLaunch() async {
+    try {
+      _handleUri(await HomeWidget.initiallyLaunchedFromHomeWidget());
+      _widgetTaps = HomeWidget.widgetClicked.listen(_handleUri);
+    } catch (_) {
+      // No widget support on this platform.
+    }
+    final axis = await ref.read(axisIdProvider.future);
+    if (!mounted) return;
+    DuelWidget.refresh(ranking: ref.read(rankingRepoProvider), photos: ref.read(photoRepoProvider), axis: axis);
+  }
+
+  void _handleUri(Uri? uri) {
+    final duel = DuelWidget.parse(uri);
+    if (duel == null) return;
+    widget.shell.goBranch(0);
+    ref.read(sessionProvider.notifier).startWithDuel(duel.$1, duel.$2, pick: duel.$3);
   }
 
   Future<void> _rescan() async {

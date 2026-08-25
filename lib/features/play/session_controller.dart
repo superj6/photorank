@@ -19,6 +19,7 @@ import '../../core/rating/observation.dart';
 import '../../core/stats/progress.dart';
 import '../../data/db/database.dart';
 import '../../data/repo/beat_repo.dart';
+import '../widget/duel_widget.dart';
 
 enum SessionStatus { idle, loading, playing, finished, empty }
 
@@ -592,6 +593,16 @@ class SessionController extends Notifier<SessionState> {
     );
     ref.invalidate(libraryCountProvider);
     ref.invalidate(decisionsProvider);
+    DuelWidget.refresh(ranking: ranking, photos: ref.read(photoRepoProvider), axis: _axis);
+  }
+
+  /// Opened from the home-screen widget: put that duel first. If a side was
+  /// tapped on the widget, count it immediately.
+  Future<void> startWithDuel(int a, int b, {int? pick}) async {
+    if (state.status != SessionStatus.playing) await start();
+    if (state.status != SessionStatus.playing) return;
+    await _insertCards([Card(mode: GameMode.duel, photoIds: [a, b])]);
+    if (pick != null && (pick == a || pick == b)) await answerDuel(pick);
   }
 
   // ---- per-mode answers ---------------------------------------------------
