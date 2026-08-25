@@ -24,6 +24,11 @@ phone; only ratings are stored.
   **Favourites**: mark Top 10/50 as system favourites or export an album.
 - **Widget**: "Today's Duel" on the home screen — tap a side to answer.
 - **Progress**: levels, streaks and badges in the hand summary and Settings.
+- **Axes**: rank the same library along several questions (Love is default;
+  add Funny / Beautiful / Nostalgic / your own). Switch from the Ranking bar.
+- **Pass the phone**: a friend plays ten cards on your settled photos —
+  "Do we agree?" or "Do you know me?" — with an agreement score, the photos
+  you disagree on, and a share card. Their answers never touch your ranking.
 - **Beats** (`lib/core/beats`) keep play fresh: every 20–35 decisions a short
   in-play moment appears — your Top 3, a climber, a head-to-head to settle, a
   deep cut, a themed 10-card deck — plus majors on milestones, a new #1, the
@@ -95,6 +100,7 @@ lib/data/repo      PhotoRepo, RankingRepo (applyCard / undoCard)
 lib/data/media     LibraryScanner (photo_manager), ThumbCache
 lib/core/bracket   single-elimination bracket model
 lib/core/stats     levels and badges
-lib/features       play/, beats/, bracket/, browse/, share/, widget/, ranking/, settings/, onboarding/, shell/
+lib/core/guest     pass-the-phone game and scoring
+lib/features       play/, beats/, bracket/, browse/, guest/, share/, widget/, ranking/, settings/, onboarding/, shell/
 android/app/src/main/kotlin/.../DuelWidgetProvider.kt   home-screen widget
 ```
