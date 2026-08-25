@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
+import '../../core/stats/progress.dart';
 import '../shell/shell_screen.dart';
 import '../widgets/photo_tile.dart';
 import 'session_controller.dart';
@@ -29,7 +30,23 @@ class SummaryView extends ConsumerWidget {
         const SizedBox(height: 4),
         Text('${summary.answered} of ${summary.cards} cards answered',
             style: const TextStyle(color: Colors.white60)),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+        _ProgressStrip(summary: summary).animate(delay: 100.ms).fadeIn(),
+        if (summary.newBadges.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final b in summary.newBadges)
+                Chip(
+                  avatar: const Icon(Icons.workspace_premium_rounded, size: 18, color: AppTheme.accent),
+                  label: Text('${b.title} · ${b.description}'),
+                ).animate(delay: 200.ms).fadeIn().scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutBack),
+            ],
+          ),
+        ],
+        const SizedBox(height: 16),
         _Stat(
           label: 'Library sorted',
           value: '$pct%',
@@ -68,6 +85,51 @@ class SummaryView extends ConsumerWidget {
           label: const Text('Deal another hand'),
         ).animate(delay: 600.ms).fadeIn(),
       ],
+    );
+  }
+}
+
+class _ProgressStrip extends StatelessWidget {
+  const _ProgressStrip({required this.summary});
+  final SessionSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = summary.level;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(16)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Level ${l.level} · ${Level.title(l.level)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(end: l.fraction),
+                    duration: const Duration(milliseconds: 700),
+                    builder: (_, v, _) => LinearProgressIndicator(value: v, minHeight: 6, backgroundColor: Colors.white10, color: AppTheme.accent),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text('${l.into} / ${l.span} to next level', style: const TextStyle(fontSize: 12, color: Colors.white54)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            children: [
+              const Icon(Icons.local_fire_department_rounded, color: AppTheme.accent, size: 28),
+              Text('${summary.streak}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              const Text('day streak', style: TextStyle(fontSize: 11, color: Colors.white54)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

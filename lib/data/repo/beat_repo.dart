@@ -50,6 +50,25 @@ class BeatRepo {
     return row.read<int>('n');
   }
 
+  /// Distinct answered cards in the given modes.
+  Future<int> cardCount(List<GameMode> modes) async {
+    final row = await db
+        .customSelect(
+          "SELECT COUNT(DISTINCT card_id) AS n FROM observations WHERE mode IN (${modes.map((m) => "'${m.name}'").join(',')})",
+          readsFrom: {db.observations},
+        )
+        .getSingle();
+    return row.read<int>('n');
+  }
+
+  Future<int> sharedCount() async {
+    final row = await db.customSelect('SELECT COUNT(*) AS n FROM beats WHERE shared_at IS NOT NULL', readsFrom: {db.beats}).getSingle();
+    return row.read<int>('n');
+  }
+
+  Future<bool> hasBeat(BeatKind kind) async =>
+      (await (db.select(db.beats)..where((b) => b.kind.equals(kind.name))..limit(1)).get()).isNotEmpty;
+
   /// Answered cards whose first observation falls in [start, end).
   Future<int> decisionCountBetween(DateTime start, DateTime end) async {
     final row = await db

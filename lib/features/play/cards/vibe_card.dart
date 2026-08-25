@@ -5,10 +5,12 @@ import '../../widgets/photo_tile.dart';
 
 /// One photo. Swipe right = feeling it, left = not feeling it.
 class VibeCard extends StatefulWidget {
-  const VibeCard({super.key, required this.mediaId, required this.onAnswer});
+  const VibeCard({super.key, required this.mediaId, required this.onAnswer, this.fit = BoxFit.cover, this.hint});
 
   final String? mediaId;
   final ValueChanged<bool> onAnswer;
+  final BoxFit fit;
+  final Widget? hint;
 
   @override
   State<VibeCard> createState() => _VibeCardState();
@@ -43,7 +45,12 @@ class _VibeCardState extends State<VibeCard> {
                   background: _Hint(Icons.favorite, 'Feeling it', Alignment.centerLeft, AppTheme.accent),
                   secondaryBackground:
                       _Hint(Icons.remove_circle_outline, 'Not feeling it', Alignment.centerRight, Colors.blueGrey),
-                  child: PhotoTile(mediaId: mediaId),
+                  child: PhotoTile(
+                    mediaId: mediaId,
+                    fit: widget.fit,
+                    onTap: mediaId == null ? null : () => PhotoPeek.show(context, mediaId),
+                    child: widget.hint == null ? null : Align(alignment: Alignment.topCenter, child: Padding(padding: const EdgeInsets.only(top: 10), child: widget.hint)),
+                  ),
                 ),
         ),
         const SizedBox(height: 12),

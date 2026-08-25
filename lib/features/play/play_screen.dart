@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/rating/observation.dart';
 import '../beats/beat_overlay.dart';
+import '../widgets/photo_tile.dart';
 import 'cards/burst_card.dart';
 import 'cards/duel_card.dart';
 import 'cards/rate_card.dart';
@@ -104,6 +105,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
 
   Widget _card(SessionState s, SessionController ctl) {
     final c = s.current!;
+    // First two cards ever: teach the two gestures that are not obvious.
+    final firstTime = s.decisions < 2 && s.index < 2;
     switch (c.mode) {
       case GameMode.duel:
       case GameMode.challenger:
@@ -111,18 +114,30 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
           topId: c.photoIds[0],
           bottomId: c.photoIds[1],
           mediaOf: s.mediaOf,
+          fitOf: s.fitOf,
           challenger: c.mode == GameMode.challenger,
           onPick: ctl.answerDuel,
+          hint: firstTime ? const Pill('Tap to pick · hold to look closer', icon: Icons.touch_app_rounded) : null,
         );
       case GameMode.vibeCheck:
-        return VibeCard(mediaId: s.mediaOf(c.photoIds.single), onAnswer: ctl.answerVibe);
+        return VibeCard(
+          mediaId: s.mediaOf(c.photoIds.single),
+          fit: s.fitOf(c.photoIds.single),
+          onAnswer: ctl.answerVibe,
+          hint: firstTime ? const Pill('Swipe · tap to view full screen', icon: Icons.swipe_rounded) : null,
+        );
       case GameMode.rate:
-        return RateCard(mediaId: s.mediaOf(c.photoIds.single), onRate: ctl.answerRate);
+        return RateCard(
+          mediaId: s.mediaOf(c.photoIds.single),
+          fit: s.fitOf(c.photoIds.single),
+          onRate: ctl.answerRate,
+          hint: firstTime ? const Pill('Double-tap for 5★ · tap to view', icon: Icons.star_rounded) : null,
+        );
       case GameMode.bestOfBurst:
         return BurstCard(ids: c.photoIds, mediaOf: s.mediaOf, onPick: ctl.answerBurst);
       case GameMode.sort3:
       case GameMode.rerankTop:
-        return SortCard(ids: c.photoIds, mediaOf: s.mediaOf, onSorted: ctl.answerSort);
+        return SortCard(ids: c.photoIds, mediaOf: s.mediaOf, fitOf: s.fitOf, onSorted: ctl.answerSort);
       case GameMode.browseHeart:
         return const SizedBox.shrink();
     }

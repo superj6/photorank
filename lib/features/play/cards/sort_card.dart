@@ -5,10 +5,11 @@ import '../../widgets/photo_tile.dart';
 
 /// Three photos. Tap them in order of preference, best first.
 class SortCard extends StatefulWidget {
-  const SortCard({super.key, required this.ids, required this.mediaOf, required this.onSorted});
+  const SortCard({super.key, required this.ids, required this.mediaOf, required this.onSorted, this.fitOf});
 
   final List<int> ids;
   final String? Function(int) mediaOf;
+  final BoxFit Function(int)? fitOf;
   final ValueChanged<List<int>> onSorted;
 
   @override
@@ -47,6 +48,7 @@ class _SortCardState extends State<SortCard> {
           Expanded(
             child: PhotoTile(
               mediaId: widget.mediaOf(id),
+              fit: widget.fitOf?.call(id) ?? BoxFit.cover,
               borderRadius: 16,
               onTap: () => _tap(id),
               child: _order.contains(id)

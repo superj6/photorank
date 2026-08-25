@@ -7,6 +7,7 @@ import '../../app/notifications.dart';
 import '../../app/providers.dart';
 import '../../core/beats/beat.dart';
 import '../../core/beats/unlocks.dart';
+import '../../core/stats/progress.dart';
 import '../../core/rating/observation.dart';
 import '../play/session_controller.dart';
 
@@ -37,6 +38,8 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          const _Section('Progress'),
+          _ProgressTile(decisions: decisions),
           const _Section('Game mix'),
           for (final e in modeNames.entries)
             if (unlocked.contains(e.key))
@@ -202,6 +205,57 @@ class _Section extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(title.toUpperCase(),
           style: const TextStyle(fontSize: 12, letterSpacing: 1.2, color: Colors.white54, fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+final _factsProvider = FutureProvider.autoDispose<ProgressFacts>((ref) async {
+  ref.watch(decisionsProvider);
+  final ctl = ref.read(sessionProvider.notifier);
+  return ctl.progressFacts();
+});
+
+class _ProgressTile extends ConsumerWidget {
+  const _ProgressTile({required this.decisions});
+  final int decisions;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final level = Level.fromXp(decisions);
+    final facts = ref.watch(_factsProvider).value;
+    final earned = facts == null ? <String>{} : Badges.earned(facts);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Level ${level.level} · ${Level.title(level.level)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(value: level.fraction, minHeight: 6, backgroundColor: Colors.white10),
+          ),
+          const SizedBox(height: 4),
+          Text('$decisions decisions · ${facts?.streak ?? 0}-day streak · ${earned.length}/${Badges.all.length} badges',
+              style: const TextStyle(fontSize: 12, color: Colors.white54)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final b in Badges.all)
+                Tooltip(
+                  message: b.description,
+                  child: Chip(
+                    avatar: Icon(earned.contains(b.id) ? Icons.workspace_premium_rounded : Icons.lock_outline,
+                        size: 16, color: earned.contains(b.id) ? const Color(0xFFFF6B4A) : Colors.white30),
+                    label: Text(b.title, style: TextStyle(color: earned.contains(b.id) ? Colors.white : Colors.white38)),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

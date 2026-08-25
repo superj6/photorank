@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show BoxFit;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -15,6 +16,7 @@ import '../../core/dealer/dealer.dart';
 import '../../core/rating/engine.dart';
 import '../../core/rating/glicko.dart';
 import '../../core/rating/observation.dart';
+import '../../core/stats/progress.dart';
 import '../../data/db/database.dart';
 import '../../data/repo/beat_repo.dart';
 
@@ -28,6 +30,9 @@ class SessionSummary {
     required this.risers,
     required this.sortedFraction,
     required this.libraryCount,
+    required this.streak,
+    required this.level,
+    this.newBadges = const [],
   });
 
   final int cards;
@@ -38,6 +43,9 @@ class SessionSummary {
   final List<(int, double)> risers;
   final double sortedFraction;
   final int libraryCount;
+  final int streak;
+  final Level level;
+  final List<Badge> newBadges;
 }
 
 class SessionState {
@@ -75,6 +83,12 @@ class SessionState {
   bool get canUndo => index > 0 && !busy && beat == null;
   double get progress => hand.isEmpty ? 0 : index / hand.length;
   String? mediaOf(int id) => photos[id]?.mediaId;
+
+  /// Landscape shots are letterboxed instead of cropped into a tall card.
+  BoxFit fitOf(int id) {
+    final p = photos[id];
+    return p != null && p.width > p.height ? BoxFit.contain : BoxFit.cover;
+  }
 
   SessionState copyWith({
     SessionStatus? status,
@@ -125,6 +139,7 @@ class SessionController extends Notifier<SessionState> {
   int _total = 0;
   bool _topTenSettled = false;
   List<List<PhotoState>> _bursts = const [];
+  ProgressFacts? _factsAtStart;
 
   static const _prefSched = 'beat_sched';
 
@@ -173,6 +188,7 @@ class SessionController extends Notifier<SessionState> {
     _before = {for (final s in states) s.id: s.rating};
 
     final sessions = await _beats.sessions();
+    _factsAtStart = await progressFacts(sessions: sessions, now: now);
     final db = ref.read(dbProvider);
     final sessionId = await db.into(db.sessions).insert(SessionsCompanion.insert(
           startedAt: now,
@@ -211,6 +227,24 @@ class SessionController extends Notifier<SessionState> {
     if (beat == null) return false;
     await _show(beat, schedule: false);
     return true;
+  }
+
+  /// Everything badges and levels are computed from.
+  Future<ProgressFacts> progressFacts({List<SessionRow>? sessions, DateTime? now}) async {
+    final all = sessions ?? await _beats.sessions();
+    final ts = now ?? DateTime.now();
+    return ProgressFacts(
+      decisions: _decisions,
+      sessions: all.where((s) => s.endedAt != null).length,
+      streak: BeatRepo.streak(all.map((s) => s.startedAt), ts),
+      burstsCleared: await _beats.cardCount([GameMode.bestOfBurst]),
+      settledFraction: _total == 0 ? 0 : _settled / _total,
+      topTenOfficial: await _beats.hasBeat(BeatKind.topTenOfficial),
+      unlockedAll: Unlocks.unlocked(_decisions, all: _unlockAll).length == Unlocks.thresholds.length,
+      duels: await _beats.cardCount([GameMode.duel, GameMode.challenger]),
+      moments: 0,
+      shares: await _beats.sharedCount(),
+    );
   }
 
   void _initTracking(List<PhotoState> states) {
@@ -539,6 +573,8 @@ class SessionController extends Notifier<SessionState> {
           .write(SessionsCompanion(endedAt: Value(DateTime.now())));
     }
     final settled = states.where((s) => s.rating.confidence >= 0.5).length;
+    final facts = await progressFacts();
+    final newBadges = _factsAtStart == null ? <Badge>[] : Badges.newlyEarned(_factsAtStart!, facts);
     HapticFeedback.mediumImpact();
     state = state.copyWith(
       status: SessionStatus.finished,
@@ -549,6 +585,9 @@ class SessionController extends Notifier<SessionState> {
         risers: risers.where((r) => r.$2 > 0).take(3).toList(),
         sortedFraction: states.isEmpty ? 0 : settled / states.length,
         libraryCount: states.length,
+        streak: facts.streak,
+        level: Level.fromXp(_decisions),
+        newBadges: newBadges,
       ),
     );
     ref.invalidate(libraryCountProvider);
