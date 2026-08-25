@@ -10,6 +10,7 @@ import '../core/sampler/rank_sampler.dart';
 import '../data/db/database.dart';
 import '../data/media/library_scanner.dart';
 import '../data/media/thumbs.dart';
+import '../data/repo/axis_repo.dart';
 import '../data/repo/beat_repo.dart';
 import '../data/repo/photo_repo.dart';
 import '../data/repo/ranking_repo.dart';
@@ -54,7 +55,50 @@ final unlockedModesProvider = FutureProvider<Set<GameMode>>((ref) async {
   return Unlocks.unlocked(decisions, all: all);
 });
 
-final axisIdProvider = FutureProvider<int>((ref) => ref.watch(dbProvider).defaultAxisId());
+final axisRepoProvider = Provider((ref) => AxisRepo(ref.watch(dbProvider)));
+
+/// The axis in play. Switch with [AxisSwitcher]; everything that watches this
+/// (ranking, browse, session) follows.
+final axisIdProvider = FutureProvider<int>((ref) => ref.watch(axisRepoProvider).current());
+
+final axesProvider = FutureProvider<List<AxisRow>>((ref) {
+  ref.watch(axisIdProvider); // refresh the list when the axis changes
+  return ref.watch(axisRepoProvider).all();
+});
+
+final currentAxisProvider = FutureProvider<AxisRow?>((ref) async {
+  final id = await ref.watch(axisIdProvider.future);
+  return ref.watch(axisRepoProvider).byId(id);
+});
+
+class AxisSwitcher extends Notifier<void> {
+  @override
+  void build() {}
+
+  Future<void> select(int id) async {
+    await ref.read(axisRepoProvider).setCurrent(id);
+    _refresh();
+  }
+
+  Future<int> add(String name, {bool select = true}) async {
+    final id = await ref.read(axisRepoProvider).add(name);
+    if (select) await ref.read(axisRepoProvider).setCurrent(id);
+    _refresh();
+    return id;
+  }
+
+  Future<void> delete(int id) async {
+    await ref.read(axisRepoProvider).delete(id);
+    _refresh();
+  }
+
+  void _refresh() {
+    ref.invalidate(axisIdProvider);
+    ref.invalidate(axesProvider);
+  }
+}
+
+final axisSwitcherProvider = NotifierProvider<AxisSwitcher, void>(AxisSwitcher.new);
 
 /// Live ranking on the default axis, best first. Debounced: every card
 /// writes ratings, and a 20k-photo join per card would be wasteful.

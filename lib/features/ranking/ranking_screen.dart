@@ -9,6 +9,7 @@ import '../../data/media/favorites_sync.dart';
 import '../share/share_cards.dart';
 import '../share/share_preview_screen.dart';
 import '../shell/shell_screen.dart';
+import '../widgets/axis_bar.dart';
 import '../widgets/photo_tile.dart';
 
 enum _Filter { top10, top100, all, settling, unseen }
@@ -60,8 +61,10 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: SizedBox(
+          preferredSize: const Size.fromHeight(92),
+          child: Column(children: [
+            const AxisBar(),
+            SizedBox(
             height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
@@ -85,6 +88,7 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
               ],
             ),
           ),
+          ]),
         ),
       ),
       body: ranking.when(

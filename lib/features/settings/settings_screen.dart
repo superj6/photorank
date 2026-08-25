@@ -10,6 +10,7 @@ import '../../core/beats/unlocks.dart';
 import '../../core/stats/progress.dart';
 import '../../core/rating/observation.dart';
 import '../play/session_controller.dart';
+import '../widgets/axis_bar.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -77,6 +78,8 @@ class SettingsScreen extends ConsumerWidget {
               ref.invalidate(sessionProvider);
             },
           ),
+          const _Section('Axes'),
+          const _AxesList(),
           const _Section('Hand size'),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -205,6 +208,53 @@ class _Section extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(title.toUpperCase(),
           style: const TextStyle(fontSize: 12, letterSpacing: 1.2, color: Colors.white54, fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _AxesList extends ConsumerWidget {
+  const _AxesList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final axes = ref.watch(axesProvider).value ?? const [];
+    final current = ref.watch(axisIdProvider).value;
+    return Column(
+      children: [
+        for (final a in axes)
+          ListTile(
+            leading: Icon(a.id == current ? Icons.radio_button_checked : Icons.radio_button_off, color: a.id == current ? const Color(0xFFFF6B4A) : Colors.white38),
+            title: Text(a.name),
+            subtitle: Text(a.isDefault ? 'Default axis' : 'Custom axis'),
+            trailing: a.isDefault
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: Text('Delete "${a.name}"?'),
+                          content: const Text('Its ratings are removed. Photos are never touched.'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+                          ],
+                        ),
+                      );
+                      if (ok == true) await ref.read(axisSwitcherProvider.notifier).delete(a.id);
+                    },
+                  ),
+            onTap: () => ref.read(axisSwitcherProvider.notifier).select(a.id),
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: ActionChip(avatar: const Icon(Icons.add, size: 16), label: const Text('Add an axis'), onPressed: () => addAxisDialog(context, ref)),
+          ),
+        ),
+      ],
     );
   }
 }

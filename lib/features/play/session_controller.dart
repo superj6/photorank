@@ -145,7 +145,10 @@ class SessionController extends Notifier<SessionState> {
   static const _prefSched = 'beat_sched';
 
   @override
-  SessionState build() => const SessionState();
+  SessionState build() {
+    ref.watch(axisIdProvider); // a new axis deals a new hand
+    return const SessionState();
+  }
 
   BeatRepo get _beats => ref.read(beatRepoProvider);
 

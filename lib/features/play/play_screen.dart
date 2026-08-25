@@ -144,7 +144,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header({required this.state, required this.onUndo, required this.onPass});
 
   final SessionState state;
@@ -152,8 +152,10 @@ class _Header extends StatelessWidget {
   final VoidCallback onPass;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final mode = state.current!.mode;
+    final axis = ref.watch(currentAxisProvider).value;
+    final axisLabel = axis == null || axis.isDefault ? '' : '${axis.name} · ';
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       child: Column(
@@ -168,7 +170,7 @@ class _Header extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: Text(
-                    _label(mode),
+                    '$axisLabel${_label(mode)}',
                     style: const TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.3),
                   ).animate(key: ValueKey(state.index)).fadeIn(duration: 200.ms),
                 ),
