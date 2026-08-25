@@ -9,6 +9,7 @@ import '../../core/beats/beat.dart';
 import '../../core/beats/unlocks.dart';
 import '../../core/stats/progress.dart';
 import '../../core/rating/observation.dart';
+import '../arena/arena_providers.dart';
 import '../play/session_controller.dart';
 import '../widgets/axis_bar.dart';
 
@@ -148,6 +149,8 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/guest'),
           ),
+          const _Section('Arena'),
+          _ArenaProfileTile(),
           const _Section('Reminders'),
           _NotifyToggle(
             prefKey: 'notify_weekly',
@@ -313,6 +316,35 @@ class _ProgressTile extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ArenaProfileTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(arenaProvider);
+    final name = s.profile?.username;
+    return ListTile(
+      leading: const Icon(Icons.badge_outlined),
+      title: Text(name == null ? 'Claim a username' : '@$name'),
+      subtitle: Text(name == null ? 'So friends can find you on the arena board' : 'Your arena name'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () async {
+        if (s.profile == null) await ref.read(arenaProvider.notifier).load();
+        if (!context.mounted) return;
+        final c = TextEditingController(text: name ?? '');
+        final v = await showDialog<String>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Username'),
+            content: TextField(controller: c, decoration: const InputDecoration(hintText: 'letters, numbers, underscore'), onSubmitted: (v) => Navigator.pop(ctx, v)),
+            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Save'))],
+          ),
+        );
+        final u = v?.trim().toLowerCase();
+        if (u != null && RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(u)) await ref.read(arenaProvider.notifier).claimUsername(u);
+      },
     );
   }
 }

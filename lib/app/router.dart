@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/arena/arena_screen.dart';
 import '../features/beats/moments_screen.dart';
 import '../features/bracket/bracket_screen.dart';
 import '../features/guest/guest_screen.dart';
@@ -33,6 +34,7 @@ GoRouter buildRouter({required String initialLocation}) => GoRouter(
             StatefulShellBranch(routes: [GoRoute(path: '/play', builder: (_, _) => const PlayScreen())]),
             StatefulShellBranch(routes: [GoRoute(path: '/browse', builder: (_, _) => const BrowseScreen())]),
             StatefulShellBranch(routes: [GoRoute(path: '/ranking', builder: (_, _) => const RankingScreen())]),
+            StatefulShellBranch(routes: [GoRoute(path: '/arena', builder: (_, _) => const ArenaScreen())]),
             StatefulShellBranch(routes: [GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen())]),
           ],
         ),
