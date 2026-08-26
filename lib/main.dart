@@ -14,7 +14,14 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!isDesktop) await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final db = AppDatabase();
-  final onboarded = await PhotoRepo(db).pref(prefOnboarded) == '1';
+  final repo = PhotoRepo(db);
+  // Desktop convenience: PHOTORANK_FOLDER=/path skips onboarding on first run.
+  final seedFolder = Platform.environment['PHOTORANK_FOLDER'];
+  if (isDesktop && seedFolder != null && await repo.pref(prefOnboarded) != '1' && await Directory(seedFolder).exists()) {
+    await repo.setPref('scan_scope', '{"months": null, "albums": null, "folders": ["$seedFolder"]}');
+    await repo.setPref(prefOnboarded, '1');
+  }
+  final onboarded = await repo.pref(prefOnboarded) == '1';
   final cacheDir = isDesktop ? await defaultCacheDir() : Directory.systemTemp;
   runApp(ProviderScope(
     overrides: [dbProvider.overrideWithValue(db), cacheDirProvider.overrideWithValue(cacheDir)],

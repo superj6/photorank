@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photorank/app/providers.dart';
@@ -32,6 +33,7 @@ Widget app(AppDatabase db, {String at = '/play'}) => ProviderScope(
     );
 
 void main() {
+  desktopTests();
   beatTests();
   late AppDatabase db;
 
@@ -154,6 +156,31 @@ void beatTests() {
     expect(sawStandings, isTrue);
     expect(sawUnlock, isTrue);
     expect(await BeatRepo(db).listBeats().then((b) => b.length), greaterThanOrEqualTo(2));
+    await unmount(tester);
+  });
+}
+
+void desktopTests() {
+  testWidgets('wide window uses the rail and keyboard passes through a hand', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final now = DateTime(2026, 8, 24, 12);
+    await PhotoRepo(db).upsertAssets([
+      for (var i = 0; i < 40; i++) ScannedAsset(mediaId: 'm$i', takenAt: now.subtract(Duration(hours: i)), width: 10, height: 10),
+    ], now: now);
+    await tester.pumpWidget(app(db));
+    await settle(tester);
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    for (var i = 0; i < 20; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await settle(tester, frames: 3);
+    }
+    await settle(tester);
+    expect(find.text('Nice hand.'), findsOneWidget);
     await unmount(tester);
   });
 }

@@ -86,6 +86,23 @@ flutter test                   # rating engine, dealer, sampler, repo tests
 flutter analyze
 ```
 
+## Run on your computer (Linux desktop)
+
+Same app, folders instead of a camera roll. Needs the Linux toolchain
+(`sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev`).
+
+```sh
+tool/install_linux.sh                       # builds and adds PhotoRank to your app menu
+PHOTORANK_FOLDER=~/Pictures ~/.local/opt/photorank/photorank   # first run: skip onboarding with a folder
+```
+
+Pick folders in onboarding or Settings → Library; photos are indexed
+recursively with EXIF dates, thumbnails are cached under the app-support dir,
+and nothing is moved or modified. Keyboard: ↑/↓ or 1/2 pick in a duel, ←/→
+for vibe checks, 1–5 stars, 1–9 tiles in bursts and sorts, space = pass,
+Z = undo. Share cards save to ~/Downloads. Windows/macOS are the same code
+but need those machines to build.
+
 ## Run in the Android emulator
 
 An AVD (`photorank`, API 35, Pixel 7) and a fake camera roll are one command
