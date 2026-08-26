@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +26,82 @@ class PlayScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayScreenState extends ConsumerState<PlayScreen> {
+  final _focus = FocusNode(debugLabel: 'play-keys');
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  /// Desktop keys: ↑/↓ or 1/2 pick in a duel, ←/→ = not feeling it / feeling
+  /// it, 1–5 stars, 1–9 tiles in a burst or sort order, space = pass, Z = undo.
+  KeyEventResult _onKey(FocusNode node, KeyEvent e) {
+    if (e is! KeyDownEvent) return KeyEventResult.ignored;
+    final s = ref.read(sessionProvider);
+    final ctl = ref.read(sessionProvider.notifier);
+    if (s.beat != null) {
+      if (e.logicalKey == LogicalKeyboardKey.space || e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.escape) {
+        ctl.dismissBeat();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+    final c = s.current;
+    if (c == null || s.status != SessionStatus.playing) return KeyEventResult.ignored;
+    final k = e.logicalKey;
+    final idx = s.index;
+    int? digit;
+    for (var d = 1; d <= 9; d++) {
+      if (k == LogicalKeyboardKey(LogicalKeyboardKey.digit0.keyId + d) || k == LogicalKeyboardKey(LogicalKeyboardKey.numpad0.keyId + d)) digit = d;
+    }
+    if (k == LogicalKeyboardKey.space) {
+      ctl.pass();
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.keyZ || k == LogicalKeyboardKey.backspace) {
+      ctl.undo();
+      return KeyEventResult.handled;
+    }
+    switch (c.mode) {
+      case GameMode.duel:
+      case GameMode.challenger:
+        if (k == LogicalKeyboardKey.arrowUp || digit == 1) ctl.answerDuel(c.photoIds[0], cardIndex: idx);
+        if (k == LogicalKeyboardKey.arrowDown || digit == 2) ctl.answerDuel(c.photoIds[1], cardIndex: idx);
+      case GameMode.vibeCheck:
+        if (k == LogicalKeyboardKey.arrowRight) ctl.answerVibe(true, cardIndex: idx);
+        if (k == LogicalKeyboardKey.arrowLeft) ctl.answerVibe(false, cardIndex: idx);
+      case GameMode.rate:
+        if (digit != null && digit <= 5) ctl.answerRate(digit, cardIndex: idx);
+      case GameMode.bestOfBurst:
+        if (digit != null && digit <= c.photoIds.length) ctl.answerBurst(c.photoIds[digit - 1], cardIndex: idx);
+      case GameMode.sort3:
+      case GameMode.rerankTop:
+        if (digit != null && digit <= c.photoIds.length) _sortKey(c.photoIds, digit - 1, idx);
+      case GameMode.browseHeart:
+        break;
+    }
+    return KeyEventResult.handled;
+  }
+
+  final _sortOrder = <int>[];
+  int _sortFor = -1;
+
+  void _sortKey(List<int> ids, int tile, int idx) {
+    if (_sortFor != idx) {
+      _sortOrder.clear();
+      _sortFor = idx;
+    }
+    final id = ids[tile];
+    if (_sortOrder.contains(id)) return;
+    _sortOrder.add(id);
+    if (_sortOrder.length == ids.length - 1) {
+      final last = ids.firstWhere((x) => !_sortOrder.contains(x));
+      ref.read(sessionProvider.notifier).answerSort([..._sortOrder, last], cardIndex: idx);
+      _sortOrder.clear();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,7 +137,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
         ),
       );
     }
-    return Scaffold(
+    return Focus(
+      focusNode: _focus,
+      autofocus: true,
+      onKeyEvent: _onKey,
+      child: Scaffold(
       body: SafeArea(
         child: switch (s.status) {
           SessionStatus.idle || SessionStatus.loading || SessionStatus.finishing =>
@@ -94,6 +175,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
               ],
             ),
         },
+      ),
       ),
     );
   }

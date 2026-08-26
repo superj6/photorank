@@ -6,6 +6,8 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../app/providers.dart' show isDesktop;
+
 import '../../app/theme.dart';
 
 /// Shows exactly what will be shared, then renders it to a PNG.
@@ -36,6 +38,13 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
       final boundary = _key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (isDesktop) {
+        final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/${widget.filename}');
+        await file.writeAsBytes(bytes!.buffer.asUint8List());
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved to ${file.path}')));
+        return;
+      }
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/${widget.filename}');
       await file.writeAsBytes(bytes!.buffer.asUint8List());

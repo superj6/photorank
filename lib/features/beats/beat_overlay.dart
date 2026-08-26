@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../app/providers.dart' show isDesktop;
 import '../../app/theme.dart';
 import '../../core/beats/beat.dart';
 import 'beat_pages.dart';
@@ -62,10 +63,14 @@ class _BeatOverlayState extends State<BeatOverlay> {
       final image = await boundary.toImage(pixelRatio: 2.5);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       if (bytes == null) return;
-      final dir = await getTemporaryDirectory();
+      final dir = isDesktop ? (await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory()) : await getTemporaryDirectory();
       final file = File('${dir.path}/photorank-${widget.beat.kind.name}-${DateTime.now().millisecondsSinceEpoch}.png');
       await file.writeAsBytes(bytes.buffer.asUint8List());
-      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'Ranked with PhotoRank'));
+      if (isDesktop) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved to ${file.path}')));
+      } else {
+        await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'Ranked with PhotoRank'));
+      }
       widget.onShared?.call();
     } finally {
       if (mounted) setState(() => _sharing = false);

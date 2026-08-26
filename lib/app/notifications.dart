@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -24,6 +26,9 @@ class Notifications {
     priority: Priority.defaultPriority,
   );
 
+  /// Scheduled notifications exist on Android/iOS; Linux only shows immediately.
+  static bool get _canSchedule => !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+
   static Future<void> init() async {
     if (_ready) return;
     try {
@@ -31,6 +36,7 @@ class Notifications {
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           iOS: DarwinInitializationSettings(requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
+          linux: LinuxInitializationSettings(defaultActionName: 'Open'),
         ),
       );
       _ready = true;
@@ -46,13 +52,14 @@ class Notifications {
     if (android != null) return await android.requestNotificationsPermission() ?? false;
     final ios = _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
     if (ios != null) return await ios.requestPermissions(alert: true, badge: false, sound: false) ?? false;
-    return false;
+    return _plugin.resolvePlatformSpecificImplementation<LinuxFlutterLocalNotificationsPlugin>() != null;
   }
 
   static Future<void> setWeeklyRecap(bool on) async {
     await init();
     if (!_ready) return;
     if (!on) return _plugin.cancel(id: _weeklyId);
+    if (!_canSchedule) return;
     await _plugin.periodicallyShow(
       id: _weeklyId,
       title: 'Your week in photos is ready',
@@ -81,7 +88,7 @@ class Notifications {
     await init();
     if (!_ready) return;
     await _plugin.cancel(id: _arenaId);
-    if (!on) return;
+    if (!on || !_canSchedule) return;
     await _initTz();
     final now = tz.TZDateTime.now(tz.local);
     var at = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour);
@@ -101,6 +108,7 @@ class Notifications {
     await init();
     if (!_ready) return;
     if (!on) return _plugin.cancel(id: _dailyId);
+    if (!_canSchedule) return;
     await _plugin.periodicallyShow(
       id: _dailyId,
       title: 'A few photos await your verdict',

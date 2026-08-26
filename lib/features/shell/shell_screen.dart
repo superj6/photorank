@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:home_widget/home_widget.dart';
 
 import '../../app/providers.dart';
+import '../../app/theme.dart';
 import '../play/session_controller.dart';
 import '../widget/duel_widget.dart';
 
@@ -78,8 +79,45 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     await ref.read(beatRepoProvider).writeDailySnapshot(states);
   }
 
+  static const _destinations = [
+    (Icons.style_outlined, Icons.style, 'Play'),
+    (Icons.auto_awesome_outlined, Icons.auto_awesome, 'Browse'),
+    (Icons.emoji_events_outlined, Icons.emoji_events, 'Ranking'),
+    (Icons.public_outlined, Icons.public, 'Arena'),
+    (Icons.tune, Icons.tune, 'Settings'),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 840;
+    if (wide) {
+      // Desktop / tablet: rail on the left, phone-shaped content centred.
+      return Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              extended: MediaQuery.sizeOf(context).width >= 1100,
+              selectedIndex: widget.shell.currentIndex,
+              onDestinationSelected: (i) => widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex),
+              leading: const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Icon(Icons.style_rounded, color: AppTheme.accent, size: 28)),
+              destinations: [
+                for (final d in _destinations)
+                  NavigationRailDestination(icon: Icon(d.$1), selectedIcon: Icon(d.$2), label: Text(d.$3)),
+              ],
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: widget.shell,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Scaffold(
       body: widget.shell,
       bottomNavigationBar: NavigationBar(
