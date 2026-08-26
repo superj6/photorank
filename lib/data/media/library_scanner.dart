@@ -5,7 +5,7 @@ import 'scanned_asset.dart';
 
 /// Which part of the device library to index.
 class ScanScope {
-  const ScanScope({this.albumIds, this.since});
+  const ScanScope({this.albumIds, this.since, this.folders});
 
   /// Restrict to these photo_manager album ids; null = everything.
   final Set<String>? albumIds;
@@ -13,9 +13,12 @@ class ScanScope {
   /// Only photos taken on/after this date; null = all time.
   final DateTime? since;
 
-  static ScanScope lastMonths(int months, {Set<String>? albumIds, DateTime? now}) {
+  /// Desktop: folders to walk (recursively).
+  final List<String>? folders;
+
+  static ScanScope lastMonths(int months, {Set<String>? albumIds, DateTime? now, List<String>? folders}) {
     final n = now ?? DateTime.now();
-    return ScanScope(albumIds: albumIds, since: DateTime(n.year, n.month - months, n.day));
+    return ScanScope(albumIds: albumIds, since: DateTime(n.year, n.month - months, n.day), folders: folders);
   }
 }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager/photo_manager.dart' show ThumbnailSize;
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
@@ -39,55 +39,21 @@ class PhotoTile extends ConsumerStatefulWidget {
 }
 
 class _PhotoTileState extends ConsumerState<PhotoTile> {
-  AssetEntity? _entity;
-  String? _for;
-
-  void _resolve() {
-    final id = widget.mediaId;
-    _for = id;
-    if (id == null) {
-      _entity = null;
-      return;
-    }
-    final cache = ref.read(thumbCacheProvider);
-    _entity = cache.cached(id);
-    if (_entity == null) {
-      cache.entity(id).then((e) {
-        if (mounted && _for == id) setState(() => _entity = e);
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _resolve();
-  }
-
-  @override
-  void didUpdateWidget(PhotoTile old) {
-    super.didUpdateWidget(old);
-    if (old.mediaId != widget.mediaId) _resolve();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final cache = ref.watch(thumbCacheProvider);
+    final source = ref.watch(photoSourceProvider);
     final id = widget.mediaId;
-    final e = _entity;
     final Widget image = id == null
         ? const _Missing()
-        : e == null
-            ? const _Placeholder()
-            : Image(
-                image: cache.provider(e, size: widget.size),
-                fit: widget.fit,
-                gaplessPlayback: true,
-                frameBuilder: (_, child, frame, wasSync) => wasSync
-                    ? child
-                    : AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: const Duration(milliseconds: 180), child: child),
-                errorBuilder: (_, _, _) => const _Missing(),
-              );
+        : Image(
+            image: source.thumb(id, size: widget.size),
+            fit: widget.fit,
+            gaplessPlayback: true,
+            frameBuilder: (_, child, frame, wasSync) => wasSync
+                ? child
+                : AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: const Duration(milliseconds: 180), child: child),
+            errorBuilder: (_, _, _) => const _Missing(),
+          );
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),
       child: GestureDetector(
@@ -112,12 +78,6 @@ class ThumbCacheSizes {
   static const grid = ThumbnailSize.square(360);
 }
 
-class _Placeholder extends StatelessWidget {
-  const _Placeholder();
-  @override
-  Widget build(BuildContext context) => const ColoredBox(color: AppTheme.surface);
-}
-
 class _Missing extends StatelessWidget {
   const _Missing();
   @override
@@ -134,19 +94,12 @@ class PhotoPeek {
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.92),
       builder: (context) => Consumer(builder: (context, ref, _) {
-        final cache = ref.watch(thumbCacheProvider);
+        final source = ref.watch(photoSourceProvider);
         return GestureDetector(
           onTap: () => Navigator.of(context).pop(),
-          child: FutureBuilder<AssetEntity?>(
-            future: cache.entity(mediaId),
-            builder: (context, snap) {
-              final e = snap.data;
-              if (e == null) return const SizedBox.expand();
-              return InteractiveViewer(
-                maxScale: 6,
-                child: Center(child: Image(image: cache.original(e), fit: BoxFit.contain)),
-              );
-            },
+          child: InteractiveViewer(
+            maxScale: 6,
+            child: Center(child: Image(image: source.original(mediaId), fit: BoxFit.contain)),
           ),
         );
       }),

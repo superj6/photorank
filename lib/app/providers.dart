@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:path_provider/path_provider.dart';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/beats/unlocks.dart';
@@ -8,8 +12,9 @@ import '../core/dealer/dealer.dart';
 import '../core/rating/observation.dart';
 import '../core/sampler/rank_sampler.dart';
 import '../data/db/database.dart';
-import '../data/media/library_scanner.dart';
-import '../data/media/thumbs.dart';
+import '../data/media/folder_source.dart';
+import '../data/media/media_store_source.dart';
+import '../data/media/photo_source.dart';
 import '../data/repo/axis_repo.dart';
 import '../data/repo/beat_repo.dart';
 import '../data/repo/photo_repo.dart';
@@ -23,8 +28,19 @@ final dbProvider = Provider<AppDatabase>((ref) {
 
 final photoRepoProvider = Provider((ref) => PhotoRepo(ref.watch(dbProvider)));
 final rankingRepoProvider = Provider((ref) => RankingRepo(ref.watch(dbProvider)));
-final scannerProvider = Provider((ref) => LibraryScanner(ref.watch(photoRepoProvider)));
-final thumbCacheProvider = Provider((ref) => ThumbCache());
+/// Mobile reads the system library; desktop reads folders. Chosen once.
+final photoSourceProvider = Provider<PhotoSource>((ref) {
+  final repo = ref.watch(photoRepoProvider);
+  if (Platform.isAndroid || Platform.isIOS) return MediaStoreSource(repo);
+  return FolderSource(repo, cacheDir: ref.watch(cacheDirProvider));
+});
+
+/// Desktop thumbnail cache directory; overridden at startup with a real path.
+final cacheDirProvider = Provider<Directory>((ref) => Directory.systemTemp);
+
+bool get isDesktop => !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+
+Future<Directory> defaultCacheDir() async => Directory('${(await getApplicationSupportDirectory()).path}/cache');
 final samplerProvider = Provider((ref) => RankSampler());
 final beatRepoProvider = Provider((ref) => BeatRepo(ref.watch(dbProvider)));
 
@@ -237,19 +253,24 @@ class ScopeSettings extends Notifier<ScanScope?> {
     final json = jsonDecode(raw) as Map<String, dynamic>;
     final months = json['months'] as int?;
     final albums = (json['albums'] as List?)?.cast<String>();
+    final folders = (json['folders'] as List?)?.cast<String>();
     return ScanScope(
       albumIds: albums?.toSet(),
       since: months == null ? null : ScanScope.lastMonths(months).since,
+      folders: folders,
     );
   }
 
-  Future<void> set({int? months, Set<String>? albumIds}) async {
+  Future<void> set({int? months, Set<String>? albumIds, List<String>? folders}) async {
     await ref.read(photoRepoProvider).setPref(
           _prefScope,
-          jsonEncode({'months': months, 'albums': albumIds?.toList()}),
+          jsonEncode({'months': months, 'albums': albumIds?.toList(), 'folders': folders}),
         );
-    state = ScanScope(albumIds: albumIds, since: months == null ? null : ScanScope.lastMonths(months).since);
+    state = ScanScope(albumIds: albumIds, since: months == null ? null : ScanScope.lastMonths(months).since, folders: folders);
   }
+
+  /// Desktop: replace the folder list, keeping everything else.
+  Future<void> setFolders(List<String> folders) => set(months: null, albumIds: state?.albumIds, folders: folders);
 }
 
 final scopeProvider = NotifierProvider<ScopeSettings, ScanScope?>(ScopeSettings.new);
@@ -266,7 +287,7 @@ class ScanController extends Notifier<ScanProgress?> {
     if (_running) return;
     _running = true;
     try {
-      await for (final p in ref.read(scannerProvider).scan(scope, markMissing: markMissing)) {
+      await for (final p in ref.read(photoSourceProvider).scan(scope, markMissing: markMissing)) {
         state = p;
       }
     } finally {

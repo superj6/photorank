@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,11 +12,12 @@ import 'data/repo/photo_repo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  if (!isDesktop) await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final db = AppDatabase();
   final onboarded = await PhotoRepo(db).pref(prefOnboarded) == '1';
+  final cacheDir = isDesktop ? await defaultCacheDir() : Directory.systemTemp;
   runApp(ProviderScope(
-    overrides: [dbProvider.overrideWithValue(db)],
+    overrides: [dbProvider.overrideWithValue(db), cacheDirProvider.overrideWithValue(cacheDir)],
     child: PhotoRankApp(initialLocation: onboarded ? '/play' : '/onboarding'),
   ));
 }

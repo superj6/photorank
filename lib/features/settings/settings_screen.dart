@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -98,11 +99,51 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: Text('${count ?? '…'} photos in play · $decisions decisions'),
             subtitle: Text(scan == null
-                ? (scope == null ? 'No scope set' : _scopeLabel(scope.since))
+                ? (scope == null ? 'No scope set' : scope.folders != null ? '${scope.folders!.length} folder(s)' : _scopeLabel(scope.since))
                 : scan.done
                     ? 'Scan complete (${scan.indexed})'
                     : 'Scanning ${scan.indexed}/${scan.total}…'),
           ),
+          if (ref.watch(photoSourceProvider).usesFolders) ...[
+            for (final f in scope?.folders ?? const <String>[])
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.folder_outlined),
+                title: Text(f, overflow: TextOverflow.ellipsis),
+                trailing: IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () async {
+                    final rest = [...?scope?.folders]..remove(f);
+                    await ref.read(scopeProvider.notifier).setFolders(rest);
+                    final sc = ref.read(scopeProvider);
+                    if (sc != null) await ref.read(scanProvider.notifier).start(sc, markMissing: true);
+                    ref.invalidate(sessionProvider);
+                  },
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(spacing: 8, children: [
+                ActionChip(
+                  avatar: const Icon(Icons.create_new_folder_outlined, size: 16),
+                  label: const Text('Add a folder'),
+                  onPressed: () async {
+                    final dir = await getDirectoryPath();
+                    if (dir == null) return;
+                    await ref.read(scopeProvider.notifier).setFolders([...?scope?.folders, dir]);
+                    final sc = ref.read(scopeProvider);
+                    if (sc != null) await ref.read(scanProvider.notifier).start(sc);
+                    ref.invalidate(sessionProvider);
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Rescan'),
+                  onPressed: scope == null ? null : () => ref.read(scanProvider.notifier).start(scope, markMissing: true),
+                ),
+              ]),
+            ),
+          ] else
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Wrap(

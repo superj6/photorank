@@ -101,7 +101,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
   void _precache(List<int> ids, SessionState s) {
     final next = s.index + 1 < s.hand.length ? s.hand[s.index + 1].photoIds : const <int>[];
     final media = [for (final id in [...ids, ...next]) s.mediaOf(id)].whereType<String>();
-    ref.read(thumbCacheProvider).precache(context, media);
+    ref.read(photoSourceProvider).precache(context, media, size: ThumbCacheSizes.card);
   }
 
   Widget _card(SessionState s, SessionController ctl) {

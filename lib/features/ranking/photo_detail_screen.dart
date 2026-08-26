@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photo_manager/photo_manager.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
@@ -37,7 +36,7 @@ class PhotoDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(_detailProvider(photoId));
-    final cache = ref.watch(thumbCacheProvider);
+    final source = ref.watch(photoSourceProvider);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -64,14 +63,9 @@ class PhotoDetailScreen extends ConsumerWidget {
           return Column(
             children: [
               Expanded(
-                child: FutureBuilder<AssetEntity?>(
-                  future: cache.entity(d.mediaId),
-                  builder: (_, snap) => snap.data == null
-                      ? const SizedBox.expand()
-                      : InteractiveViewer(
-                          maxScale: 6,
-                          child: Center(child: Image(image: cache.original(snap.data!), fit: BoxFit.contain)),
-                        ),
+                child: InteractiveViewer(
+                  maxScale: 6,
+                  child: Center(child: Image(image: source.original(d.mediaId), fit: BoxFit.contain)),
                 ),
               ),
               Container(

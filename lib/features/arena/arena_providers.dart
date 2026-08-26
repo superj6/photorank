@@ -1,7 +1,6 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photo_manager/photo_manager.dart';
 
 import '../../app/notifications.dart';
 import '../../app/providers.dart';
@@ -159,8 +158,7 @@ class ArenaController extends Notifier<ArenaState> {
       final takenAt = row?.takenAt;
       if (row == null || takenAt == null) throw StateError('That photo has no capture date.');
       if (!isFromToday(takenAt)) throw StateError('Only a photo taken today can enter.');
-      final entity = await AssetEntity.fromId(row.mediaId);
-      final bytes = await entity?.originBytes;
+      final bytes = await ref.read(photoSourceProvider).originalBytes(row.mediaId);
       if (bytes == null) throw StateError('Could not read that photo.');
       final prepared = await compute(_prepare, bytes);
       if (prepared == null) throw StateError('That file is not an image.');

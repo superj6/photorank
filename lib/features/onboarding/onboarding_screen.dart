@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../../app/providers.dart';
@@ -25,9 +26,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _busy = true;
       _error = null;
     });
-    final state = await ref.read(scannerProvider).requestPermission();
+    final ok = await ref.read(photoSourceProvider).requestAccess();
     if (!mounted) return;
-    if (state.hasAccess) {
+    if (ok) {
       setState(() {
         _step = 2;
         _busy = false;
@@ -40,9 +41,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  Future<void> _start({required int? months}) async {
+  Future<void> _pickFolder() async {
+    final dir = await getDirectoryPath();
+    if (dir == null || !mounted) return;
+    await _start(months: null, folders: [dir]);
+  }
+
+  Future<void> _start({required int? months, List<String>? folders}) async {
     setState(() => _busy = true);
-    await ref.read(scopeProvider.notifier).set(months: months);
+    await ref.read(scopeProvider.notifier).set(months: months, folders: folders);
     final scope = ref.read(scopeProvider)!;
     await ref.read(photoRepoProvider).setPref(prefOnboarded, '1');
     // Kick off the scan; play begins once the first page is in.
@@ -59,6 +66,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final scan = ref.watch(scanProvider);
+    final desktop = ref.watch(photoSourceProvider).usesFolders;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -75,6 +83,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       'your photos never leave this phone.',
                   action: 'Let\'s go',
                   onAction: () => setState(() => _step = 1),
+                ),
+              1 when desktop => _Page(
+                  key: const ValueKey(1),
+                  icon: Icons.folder_open_rounded,
+                  title: 'Your photos',
+                  body: 'Pick a folder — every photo inside it (and its subfolders) joins the game. You can add more folders later in Settings. Nothing is moved, changed or uploaded.',
+                  action: _busy ? (scan == null ? 'Indexing…' : 'Indexing ${scan.indexed}/${scan.total}…') : 'Choose a folder',
+                  onAction: _busy ? null : _pickFolder,
                 ),
               1 => _Page(
                   key: const ValueKey(1),
