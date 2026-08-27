@@ -19,6 +19,7 @@ void main() {
   missingPhotoTests();
   unavailableFolderTests();
   incrementalScanTests();
+  removedFolderTests();
   test('readHeader gets EXIF date and size, falls back to mtime', () {
     final im = img.Image(width: 640, height: 480);
     im.exif.exifIfd['DateTimeOriginal'] = '2026:03:11 09:35:00';
@@ -225,5 +226,38 @@ void incrementalScanTests() {
     final row = (await repo.byIds([1])).single;
     expect(row.mediaId.endsWith('p0.jpg'), isTrue);
     expect(row.width, 123, reason: 'a modified file is re-read');
+  });
+}
+
+void removedFolderTests() {
+  test('photos of a folder removed from the scope leave play', () async {
+    final tmp = await Directory.systemTemp.createTemp('photorank_scope');
+    addTearDown(() => tmp.delete(recursive: true));
+    final keep = await Directory('${tmp.path}/keep').create();
+    final drop = await Directory('${tmp.path}/drop').create();
+    for (var i = 0; i < 3; i++) {
+      File('${keep.path}/k$i.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 40, height: 30)));
+      File('${drop.path}/d$i.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 40, height: 30)));
+    }
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = PhotoRepo(db);
+    final ranking = RankingRepo(db);
+    final axis = await db.defaultAxisId();
+    final source = FolderSource(repo, cacheDir: Directory('${tmp.path}/cache'));
+
+    await source.scan(ScanScope(folders: [keep.path, drop.path]), markMissing: true).drain<void>();
+    expect((await ranking.photoStates(axis)).length, 6);
+
+    // The folder is removed from the scope list; its files are still on disk.
+    await source.scan(ScanScope(folders: [keep.path]), markMissing: true).drain<void>();
+    final left = await ranking.photoStates(axis);
+    expect(left.length, 3, reason: 'photos outside every listed folder leave play');
+    expect(left.every((s) => s.mediaId!.contains('/keep/')), isTrue);
+    expect(File('${drop.path}/d0.jpg').existsSync(), isTrue, reason: 'nothing is deleted from disk');
+
+    // Adding the folder back returns them, ratings intact.
+    await source.scan(ScanScope(folders: [keep.path, drop.path]), markMissing: true).drain<void>();
+    expect((await ranking.photoStates(axis)).length, 6);
   });
 }

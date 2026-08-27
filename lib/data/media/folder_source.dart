@@ -98,7 +98,9 @@ class FolderSource extends PhotoSource {
       indexed += paths.length;
       yield ScanProgress(indexed: indexed, total: files.length);
     }
-    if (markMissing) await repo.markMissingExcept(seen, within: readable);
+    if (markMissing) {
+      await repo.markMissingExcept(seen, configuredRoots: folders, readableRoots: readable);
+    }
     await repo.clusterNewPhotos();
     yield ScanProgress(indexed: indexed, total: files.length, done: true);
   }

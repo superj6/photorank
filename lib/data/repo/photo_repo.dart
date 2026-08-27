@@ -76,27 +76,45 @@ class PhotoRepo {
   /// After a full scan, flag anything the library no longer contains so it
   /// stops being dealt. Photos that come back are un-flagged by [upsertAssets].
   ///
-  /// [within] limits the sweep to photos whose media id sits under one of
-  /// those roots — the scanner passes the folders it could actually read, so
-  /// an unplugged drive or an unreadable folder never empties the library.
-  /// With no [within] (the phone's media store), a scan that found nothing at
-  /// all is treated as a failed scan rather than an emptied library.
+  /// On desktop the scanner passes the folders currently in scope
+  /// ([configuredRoots]) and the subset it could actually read
+  /// ([readableRoots]). A photo leaves play when it sits outside every
+  /// configured folder (that folder was removed from the scope) or when its
+  /// folder was read and the file was not found (it was deleted). A photo in
+  /// a configured folder that could not be read — an unplugged drive — is
+  /// left alone, so the library never empties itself by accident.
+  ///
+  /// With no roots (the phone's media store) a scan that found nothing at all
+  /// is treated as a failed scan rather than an emptied library.
   ///
   /// Batched: removing a folder of thousands of photos is a handful of
   /// statements, not one per photo.
-  Future<int> markMissingExcept(Set<String> presentMediaIds, {List<String>? within}) async {
-    if (within == null && presentMediaIds.isEmpty) return 0;
-    if (within != null && within.isEmpty) return 0;
+  Future<int> markMissingExcept(
+    Set<String> presentMediaIds, {
+    List<String>? configuredRoots,
+    List<String>? readableRoots,
+  }) async {
+    if (configuredRoots == null && presentMediaIds.isEmpty) return 0;
     final rows = await (db.selectOnly(db.photos)
           ..addColumns([db.photos.id, db.photos.mediaId])
           ..where(db.photos.missing.equals(false)))
         .get();
-    bool covered(String mediaId) =>
-        within == null || within.any((root) => mediaId == root || p.isWithin(root, mediaId));
+
+    bool under(List<String> roots, String mediaId) =>
+        roots.any((root) => mediaId == root || p.isWithin(root, mediaId));
+
+    bool isGone(String mediaId) {
+      if (configuredRoots == null) return !presentMediaIds.contains(mediaId);
+      // Outside every folder in scope: that folder is no longer listed.
+      if (!under(configuredRoots, mediaId)) return true;
+      // In scope but its folder could not be read right now: keep it.
+      if (!under(readableRoots ?? const [], mediaId)) return false;
+      return !presentMediaIds.contains(mediaId);
+    }
+
     final gone = [
       for (final r in rows)
-        if (covered(r.read(db.photos.mediaId)!) && !presentMediaIds.contains(r.read(db.photos.mediaId)))
-          r.read(db.photos.id)!,
+        if (isGone(r.read(db.photos.mediaId)!)) r.read(db.photos.id)!,
     ];
     if (gone.isEmpty) return 0;
     await db.batch((b) {
