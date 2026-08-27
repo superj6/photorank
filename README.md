@@ -168,6 +168,29 @@ Store copy, data-safety answers, and the release checklist live in
 [`docs/store/LISTING.md`](docs/store/LISTING.md); the privacy policy is
 [`docs/PRIVACY.md`](docs/PRIVACY.md).
 
+## Ideas on the roadmap
+
+Not built yet — recorded here so they are not lost. Full staging in
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+- **A profile that shows your Top N.** Publish your top 10 (or any N) from
+  your own library to a profile page friends can open — the mobile/desktop
+  ranking finally has an audience, not just the one-photo-a-day Arena entry.
+  Needs: per-photo opt-in before anything leaves the device, a "publish my
+  top N" action that uploads only those photos (downsized, metadata
+  stripped, exactly like an Arena entry), a way to unpublish, and a profile
+  URL that works for someone without the app.
+- **Rank your friends' top N.** Once friends publish their sets, those photos
+  become a deck you can rank — and your friend sees the resulting order: how
+  *other people* would sort their favourites. The rating engine already does
+  this (it is the Arena's pairwise Glicko over a fixed pool); the new parts
+  are a per-friend pool instead of a daily one, a "your friends ranked your
+  top 10 like this" view for the owner, and per-set permissions (friends
+  only / link / public).
+- Open questions worth settling first: is a set ranked once or continuously;
+  does the owner see who voted or only the aggregate; does ranking a friend's
+  set feed your own library ranking at all (probably not — different question).
+
 ## Layout
 
 ```

@@ -120,6 +120,16 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       // Also covers a scope change that invalidated the session.
       WidgetsBinding.instance.addPostFrameCallback((_) => ctl.start());
     }
+    // A first scan can finish after the session was dealt from an empty (or
+    // barely populated) library: deal again once photos have arrived.
+    ref.listen(scanProvider, (prev, next) {
+      if (next == null) return;
+      final grew = prev == null || next.indexed > prev.indexed;
+      final status = ref.read(sessionProvider).status;
+      if (grew && (status == SessionStatus.empty || (next.done && status == SessionStatus.idle))) {
+        ref.read(sessionProvider.notifier).start();
+      }
+    });
     ref.listen(sessionProvider.select((s) => s.current), (prev, next) {
       if (next != null) _precache(next.photoIds, s);
     });

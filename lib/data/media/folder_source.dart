@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:photo_manager/photo_manager.dart' show ThumbnailSize;
 
 import '../repo/photo_repo.dart';
+import 'image_header.dart';
 import 'photo_source.dart';
 import 'scanned_asset.dart';
 
@@ -118,10 +119,11 @@ ScannedAsset readHeader(String path, Uint8List head, {DateTime? modifiedAt}) {
       }
       orientation = exif.imageIfd['Orientation']?.toInt() ?? 1;
     }
-    final info = img.findDecoderForData(head)?.startDecode(head);
-    if (info != null) {
-      width = info.width;
-      height = info.height;
+    // Header-only: starting a real decode here costs ~110 ms per photo.
+    final size = imageSizeFromHeader(head);
+    if (size != null) {
+      width = size.width;
+      height = size.height;
       if (orientation >= 5) {
         final t = width;
         width = height;
