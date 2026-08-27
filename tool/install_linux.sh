@@ -18,6 +18,20 @@ Exec=$DEST/photorank
 Icon=photorank
 Terminal=false
 Categories=Graphics;Photography;
+StartupWMClass=dev.photorank.photorank
 DESKTOP
 update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+
+# GNOME: pin to the dock (idempotent).
+if command -v gsettings >/dev/null && gsettings writable org.gnome.shell favorite-apps >/dev/null 2>&1; then
+  python3 - <<'PY' || true
+import ast, subprocess
+cur = subprocess.run(['gsettings', 'get', 'org.gnome.shell', 'favorite-apps'], capture_output=True, text=True).stdout.strip()
+favs = ast.literal_eval(cur)
+if 'photorank.desktop' not in favs:
+    favs.append('photorank.desktop')
+    subprocess.run(['gsettings', 'set', 'org.gnome.shell', 'favorite-apps', str(favs)], check=True)
+PY
+fi
+
 echo "Installed to $DEST — find PhotoRank in your app menu, or run $DEST/photorank"
