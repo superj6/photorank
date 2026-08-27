@@ -39,6 +39,15 @@ class PhotoTile extends ConsumerStatefulWidget {
 }
 
 class _PhotoTileState extends ConsumerState<PhotoTile> {
+  static final _reported = <String>{};
+
+  /// The file is gone since the last scan: take it out of play now, so the
+  /// dealer stops offering it before the next rescan notices.
+  void _reportMissing(String mediaId) {
+    if (!_reported.add(mediaId)) return;
+    ref.read(photoRepoProvider).markMissingByMediaId(mediaId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final source = ref.watch(photoSourceProvider);
@@ -52,7 +61,10 @@ class _PhotoTileState extends ConsumerState<PhotoTile> {
             frameBuilder: (_, child, frame, wasSync) => wasSync
                 ? child
                 : AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: const Duration(milliseconds: 180), child: child),
-            errorBuilder: (_, _, _) => const _Missing(),
+            errorBuilder: (_, _, _) {
+              _reportMissing(id);
+              return const _Missing();
+            },
           );
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),

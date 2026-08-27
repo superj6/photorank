@@ -68,7 +68,9 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
       scope = ref.read(scopeProvider);
     }
     if (scope == null || !mounted) return;
-    ref.read(scanProvider.notifier).start(scope);
+    // markMissing: the scan enumerates the whole scope anyway, so this is the
+    // moment to notice photos that have been deleted or moved since last time.
+    ref.read(scanProvider.notifier).start(scope, markMissing: true);
     _snapshot();
   }
 

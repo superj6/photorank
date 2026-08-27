@@ -10,10 +10,14 @@ import 'package:photorank/data/db/database.dart';
 import 'package:photorank/data/media/folder_source.dart';
 import 'package:photorank/data/media/library_scanner.dart';
 import 'package:photo_manager/photo_manager.dart' show ThumbnailSize;
+import 'package:photorank/data/media/scanned_asset.dart';
 import 'package:photorank/data/repo/photo_repo.dart';
+import 'package:photorank/data/repo/ranking_repo.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  missingPhotoTests();
+  unavailableFolderTests();
   test('readHeader gets EXIF date and size, falls back to mtime', () {
     final im = img.Image(width: 640, height: 480);
     im.exif.exifIfd['DateTimeOriginal'] = '2026:03:11 09:35:00';
@@ -72,5 +76,108 @@ void main() {
       fullDone.complete();
     }, onError: (e, st) => fullDone.completeError('original error: $e')));
     await fullDone.future;
+  });
+}
+
+void missingPhotoTests() {
+  test('photos deleted from a scanned folder leave play on the next scan', () async {
+    final tmp = await Directory.systemTemp.createTemp('photorank_missing');
+    addTearDown(() => tmp.delete(recursive: true));
+    for (var i = 0; i < 5; i++) {
+      File('${tmp.path}/p$i.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 60 + i, height: 40)));
+    }
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = PhotoRepo(db);
+    final ranking = RankingRepo(db);
+    final axis = await db.defaultAxisId();
+    final source = FolderSource(repo, cacheDir: Directory('${tmp.path}/cache'));
+    final scope = ScanScope(folders: [tmp.path]);
+
+    await source.scan(scope).drain<void>();
+    expect(await repo.count(), 5);
+    expect((await ranking.photoStates(axis)).length, 5);
+
+    // Two files are removed from the folder.
+    File('${tmp.path}/p1.jpg').deleteSync();
+    File('${tmp.path}/p3.jpg').deleteSync();
+
+    // A scan that does not look for deletions leaves them in play...
+    await source.scan(scope).drain<void>();
+    expect((await ranking.photoStates(axis)).length, 5);
+
+    // ...the launch/rescan path (markMissing) takes them out.
+    await source.scan(scope, markMissing: true).drain<void>();
+    final left = await ranking.photoStates(axis);
+    expect(left.length, 3);
+    expect(await repo.count(), 3, reason: 'count() excludes missing photos');
+    final rows = await repo.byIds(left.map((s) => s.id).toList());
+    expect(rows.every((r) => !r.mediaId.endsWith('p1.jpg') && !r.mediaId.endsWith('p3.jpg')), isTrue);
+
+    // A photo that comes back returns to play, keeping its row (and ratings).
+    File('${tmp.path}/p1.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 61, height: 40)));
+    await source.scan(scope, markMissing: true).drain<void>();
+    expect((await ranking.photoStates(axis)).length, 4);
+
+    // A file deleted between scans is dropped as soon as it fails to load.
+    File('${tmp.path}/p0.jpg').deleteSync();
+    await repo.markMissingByMediaId('${tmp.path}/p0.jpg');
+    expect((await ranking.photoStates(axis)).length, 3);
+  });
+}
+
+void unavailableFolderTests() {
+  test('an unavailable folder never empties the library', () async {
+    final tmp = await Directory.systemTemp.createTemp('photorank_drive');
+    addTearDown(() => tmp.delete(recursive: true));
+    final drive = await Directory('${tmp.path}/drive').create();
+    final local = await Directory('${tmp.path}/local').create();
+    for (var i = 0; i < 4; i++) {
+      File('${drive.path}/d$i.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 50, height: 40)));
+    }
+    File('${local.path}/l0.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 50, height: 40)));
+
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = PhotoRepo(db);
+    final ranking = RankingRepo(db);
+    final axis = await db.defaultAxisId();
+    final source = FolderSource(repo, cacheDir: Directory('${tmp.path}/cache'));
+    final scope = ScanScope(folders: [drive.path, local.path]);
+
+    await source.scan(scope, markMissing: true).drain<void>();
+    expect((await ranking.photoStates(axis)).length, 5);
+
+    // The "drive" is unplugged: its photos must stay in the library.
+    await drive.delete(recursive: true);
+    await source.scan(scope, markMissing: true).drain<void>();
+    expect((await ranking.photoStates(axis)).length, 5,
+        reason: 'photos on an unavailable drive are kept, not flagged missing');
+
+    // A readable folder that is genuinely emptied does lose its photos.
+    File('${local.path}/l0.jpg').deleteSync();
+    await source.scan(scope, markMissing: true).drain<void>();
+    final left = await ranking.photoStates(axis);
+    expect(left.length, 4, reason: 'the emptied local folder is swept; the drive is untouched');
+    expect(left.every((s) => s.mediaId!.contains('/drive/')), isTrue);
+
+    // Plugging the drive back in restores them without losing their ratings.
+    await Directory(drive.path).create();
+    for (var i = 0; i < 4; i++) {
+      File('${drive.path}/d$i.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 50, height: 40)));
+    }
+    await source.scan(scope, markMissing: true).drain<void>();
+    expect((await ranking.photoStates(axis)).length, 4);
+  });
+
+  test('a media-store scan that returns nothing does not wipe the library', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = PhotoRepo(db);
+    await repo.upsertAssets([for (var i = 0; i < 6; i++) ScannedAsset(mediaId: 'asset$i')]);
+    expect(await repo.markMissingExcept(const {}), 0, reason: 'empty scan is treated as a failure');
+    expect(await repo.count(), 6);
+    expect(await repo.markMissingExcept({'asset0', 'asset1'}), 4);
+    expect(await repo.count(), 2);
   });
 }

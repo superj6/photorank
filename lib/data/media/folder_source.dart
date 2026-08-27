@@ -42,11 +42,21 @@ class FolderSource extends PhotoSource {
   Stream<ScanProgress> scan(ScanScope scope, {bool markMissing = false}) async* {
     final folders = scope.folders ?? const <String>[];
     final files = <File>[];
+    // Folders we could actually read. A folder that is gone right now (an
+    // unplugged drive, a network share) must not take its photos out of play.
+    final readable = <String>[];
     for (final f in folders) {
       final dir = Directory(f);
       if (!await dir.exists()) continue;
-      await for (final e in dir.list(recursive: true, followLinks: false)) {
-        if (e is File && extensions.contains(p.extension(e.path).toLowerCase())) files.add(e);
+      try {
+        final found = <File>[];
+        await for (final e in dir.list(recursive: true, followLinks: false)) {
+          if (e is File && extensions.contains(p.extension(e.path).toLowerCase())) found.add(e);
+        }
+        files.addAll(found);
+        readable.add(f);
+      } on FileSystemException catch (e) {
+        debugPrint('skipping unreadable folder $f: $e');
       }
     }
     yield ScanProgress(indexed: 0, total: files.length);
@@ -65,7 +75,7 @@ class FolderSource extends PhotoSource {
       indexed += paths.length;
       yield ScanProgress(indexed: indexed, total: files.length);
     }
-    if (markMissing) await repo.markMissingExcept(seen);
+    if (markMissing) await repo.markMissingExcept(seen, within: readable);
     await repo.clusterNewPhotos();
     yield ScanProgress(indexed: indexed, total: files.length, done: true);
   }

@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as p;
 
 import '../../core/dealer/burst_cluster.dart';
 import '../../core/dealer/photo_state.dart';
@@ -55,15 +56,47 @@ class PhotoRepo {
     return row.read(db.photos.id.count()) ?? 0;
   }
 
-  /// After a full scan, flag anything the device no longer has.
-  Future<void> markMissingExcept(Set<String> presentMediaIds) async {
-    final all = await db.select(db.photos).get();
-    final gone = all.where((p) => !presentMediaIds.contains(p.mediaId)).map((p) => p.id);
-    for (final id in gone) {
-      await (db.update(db.photos)..where((p) => p.id.equals(id)))
-          .write(const PhotosCompanion(missing: Value(true)));
-    }
+  /// After a full scan, flag anything the library no longer contains so it
+  /// stops being dealt. Photos that come back are un-flagged by [upsertAssets].
+  ///
+  /// [within] limits the sweep to photos whose media id sits under one of
+  /// those roots — the scanner passes the folders it could actually read, so
+  /// an unplugged drive or an unreadable folder never empties the library.
+  /// With no [within] (the phone's media store), a scan that found nothing at
+  /// all is treated as a failed scan rather than an emptied library.
+  ///
+  /// Batched: removing a folder of thousands of photos is a handful of
+  /// statements, not one per photo.
+  Future<int> markMissingExcept(Set<String> presentMediaIds, {List<String>? within}) async {
+    if (within == null && presentMediaIds.isEmpty) return 0;
+    if (within != null && within.isEmpty) return 0;
+    final rows = await (db.selectOnly(db.photos)
+          ..addColumns([db.photos.id, db.photos.mediaId])
+          ..where(db.photos.missing.equals(false)))
+        .get();
+    bool covered(String mediaId) =>
+        within == null || within.any((root) => mediaId == root || p.isWithin(root, mediaId));
+    final gone = [
+      for (final r in rows)
+        if (covered(r.read(db.photos.mediaId)!) && !presentMediaIds.contains(r.read(db.photos.mediaId)))
+          r.read(db.photos.id)!,
+    ];
+    if (gone.isEmpty) return 0;
+    await db.batch((b) {
+      for (var i = 0; i < gone.length; i += 400) {
+        final chunk = gone.sublist(i, (i + 400).clamp(0, gone.length));
+        b.update(db.photos, const PhotosCompanion(missing: Value(true)),
+            where: (p) => p.id.isIn(chunk));
+      }
+    });
+    return gone.length;
   }
+
+  /// A photo that failed to load right now (deleted between scans): drop it
+  /// from play immediately rather than showing a broken card again.
+  Future<void> markMissingByMediaId(String mediaId) =>
+      (db.update(db.photos)..where((p) => p.mediaId.equals(mediaId)))
+          .write(const PhotosCompanion(missing: Value(true)));
 
   Future<PhotoRow?> byId(int id) =>
       (db.select(db.photos)..where((p) => p.id.equals(id))).getSingleOrNull();
