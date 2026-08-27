@@ -37,6 +37,7 @@ class DealerConfig {
     },
     this.handSize = 20,
     this.topTierSize = 50,
+    this.newPhotoShare = 0.25,
     this.weights = const PriorityWeights(),
   });
 
@@ -44,13 +45,22 @@ class DealerConfig {
   final Map<GameMode, double> modeWeights;
   final int handSize;
   final int topTierSize;
+
+  /// Share of a hand allowed to involve photos you have never rated.
+  ///
+  /// Unrated photos are the most informative, so priority always favours
+  /// them; without a cap a large unrated library crowds out everything you
+  /// have already ranked. The cap is a preference, not a hard rule: if there
+  /// are not enough rated photos to fill the hand, new ones are used anyway.
+  final double newPhotoShare;
   final PriorityWeights weights;
 
-  DealerConfig copyWith({Map<GameMode, double>? modeWeights, int? handSize}) =>
+  DealerConfig copyWith({Map<GameMode, double>? modeWeights, int? handSize, double? newPhotoShare}) =>
       DealerConfig(
         modeWeights: modeWeights ?? this.modeWeights,
         handSize: handSize ?? this.handSize,
         topTierSize: topTierSize,
+        newPhotoShare: newPhotoShare ?? this.newPhotoShare,
         weights: weights,
       );
 }
@@ -90,8 +100,16 @@ class Dealer {
     // One member per moment per hand; shadowed burst losers sit out (their
     // winner represents the moment) unless nothing else is left.
     final usedClusters = <int>{};
+    // Cards that introduce a photo you have never rated, and the ceiling for
+    // this hand. Priority favours unrated photos so strongly that a big fresh
+    // library would otherwise fill every hand with strangers.
+    final newQuota = (config.handSize * config.newPhotoShare).round().clamp(0, config.handSize);
+    var newDealt = 0;
+    bool isUnrated(PhotoState p) => p.observations == 0;
     bool blocked(PhotoState p) =>
-        (p.clusterId != null && usedClusters.contains(p.clusterId)) || p.shadowedBy != null;
+        (p.clusterId != null && usedClusters.contains(p.clusterId)) ||
+        p.shadowedBy != null ||
+        (isUnrated(p) && newDealt >= newQuota);
     void take(PhotoState p) {
       used.add(p.id);
       if (p.clusterId != null) usedClusters.add(p.clusterId!);
@@ -207,6 +225,7 @@ class Dealer {
         continue;
       }
       cards.add(card);
+      if (card.photoIds.any((id) => byId[id] != null && isUnrated(byId[id]!))) newDealt++;
     }
 
     // Delight rule: at least one current top-tier photo per (real) hand.

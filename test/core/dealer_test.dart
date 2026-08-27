@@ -8,6 +8,7 @@ import 'package:photorank/core/rating/observation.dart';
 
 void main() {
   momentDealerTests();
+  newPhotoShareTests();
   final now = DateTime(2026, 8, 24, 12);
 
   List<PhotoState> library(int n, {double rd = 350, int seed = 1, bool rated = true}) {
@@ -183,5 +184,82 @@ void momentDealerTests() {
         expect(c.photoIds.any((id) => byId[id]!.shadowedBy != null), isFalse, reason: 'shadowed losers sit out');
       }
     }
+  });
+}
+
+void newPhotoShareTests() {
+  final now = DateTime(2026, 8, 27, 12);
+
+  List<PhotoState> mixed({required int rated, required int unrated}) => [
+        for (var i = 0; i < rated; i++)
+          PhotoState(
+            id: i,
+            rating: Rating(mu: 1400 + (i % 9) * 40, rd: 70),
+            observations: 4,
+            takenAt: now.subtract(Duration(days: 200 + i)),
+            addedAt: now.subtract(const Duration(days: 300)),
+            lastShownAt: now.subtract(Duration(days: i % 20)),
+          ),
+        for (var i = 0; i < unrated; i++)
+          PhotoState(
+            id: 100000 + i,
+            rating: Rating.initial,
+            takenAt: now.subtract(Duration(days: 200 + i)),
+            // Freshly indexed, like a folder just added.
+            addedAt: now,
+          ),
+      ];
+
+  test('a big unrated library does not take over the hand', () {
+    // The shape of the real library: ~10k unrated, ~1.2k rated.
+    final photos = mixed(rated: 1200, unrated: 10000);
+    for (var seed = 0; seed < 6; seed++) {
+      final cards = Dealer(rng: Random(seed)).dealHand(photos, config: const DealerConfig(), now: now);
+      final byId = {for (final p in photos) p.id: p};
+      final newCards = cards.where((c) => c.photoIds.any((id) => byId[id]!.observations == 0)).length;
+      expect(cards.length, 20);
+      expect(newCards, lessThanOrEqualTo(5), reason: 'default share is 25% of 20 cards (seed $seed)');
+      expect(newCards, greaterThan(0), reason: 'new photos still get in (seed $seed)');
+    }
+  });
+
+  test('the share is configurable', () {
+    final photos = mixed(rated: 1200, unrated: 10000);
+    int newCardsFor(double share) {
+      final cards = Dealer(rng: Random(3)).dealHand(photos,
+          config: DealerConfig(newPhotoShare: share), now: now);
+      final byId = {for (final p in photos) p.id: p};
+      return cards.where((c) => c.photoIds.any((id) => byId[id]!.observations == 0)).length;
+    }
+
+    expect(newCardsFor(0.0), 0, reason: 'never introduce new photos');
+    expect(newCardsFor(0.1), lessThanOrEqualTo(2));
+    expect(newCardsFor(0.5), greaterThan(newCardsFor(0.1)));
+  });
+
+  test('a library with nothing rated yet still deals a full hand', () {
+    final photos = mixed(rated: 0, unrated: 300);
+    final cards = Dealer(rng: Random(1)).dealHand(photos, config: const DealerConfig(), now: now);
+    expect(cards.length, 20, reason: 'the cap yields when there is nothing else to deal');
+  });
+
+  test('recency follows when a photo was taken, not when it was indexed', () {
+    final justImportedOldPhoto = PhotoState(
+      id: 1,
+      rating: Rating.initial,
+      takenAt: now.subtract(const Duration(days: 900)),
+      addedAt: now,
+    );
+    final photoTakenToday = PhotoState(
+      id: 2,
+      rating: Rating.initial,
+      takenAt: now.subtract(const Duration(hours: 2)),
+      addedAt: now,
+    );
+    final rng = Random(0);
+    const w = PriorityWeights(noise: 0);
+    expect(priorityOf(photoTakenToday, now, rng, w: w),
+        greaterThan(priorityOf(justImportedOldPhoto, now, rng, w: w)),
+        reason: 'a photo shot today outranks a decade-old one imported today');
   });
 }

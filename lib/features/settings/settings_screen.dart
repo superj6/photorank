@@ -95,6 +95,32 @@ class SettingsScreen extends ConsumerWidget {
               onSelectionChanged: (s) => settings.setHandSize(s.first),
             ),
           ),
+          const _Section('New photos'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              'Photos you have never rated are the most informative, so they are '
+              'dealt first. This caps how much of each hand they take, leaving '
+              'room to revisit what you have already ranked.',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 13),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SegmentedButton<double>(
+              segments: [
+                ButtonSegment(value: 0.1, label: const Text('Rarely'), tooltip: '${(config.handSize * 0.1).round()} of ${config.handSize} cards'),
+                ButtonSegment(value: 0.25, label: const Text('Sometimes'), tooltip: '${(config.handSize * 0.25).round()} of ${config.handSize} cards'),
+                ButtonSegment(value: 0.5, label: const Text('Often'), tooltip: '${(config.handSize * 0.5).round()} of ${config.handSize} cards'),
+                const ButtonSegment(value: 1.0, label: Text('Always')),
+              ],
+              selected: {_nearestShare(config.newPhotoShare)},
+              onSelectionChanged: (v) {
+                settings.setNewPhotoShare(v.first);
+                ref.invalidate(sessionProvider);
+              },
+            ),
+          ),
           const _Section('Library'),
           ListTile(
             title: Text('${count ?? '…'} photos in play · $decisions decisions'),
@@ -235,6 +261,12 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Snap a stored share to the nearest offered option.
+  static double _nearestShare(double share) {
+    const options = [0.1, 0.25, 0.5, 1.0];
+    return options.reduce((a, b) => (a - share).abs() <= (b - share).abs() ? a : b);
   }
 
   String _scopeLabel(DateTime? since) =>

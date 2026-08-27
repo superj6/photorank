@@ -190,7 +190,11 @@ class DealerSettings extends Notifier<DealerConfig> {
       for (final e in (json['modes'] as Map<String, dynamic>).entries)
         GameMode.values.byName(e.key): (e.value as num).toDouble(),
     };
-    state = state.copyWith(modeWeights: weights, handSize: json['handSize'] as int?);
+    state = state.copyWith(
+      modeWeights: weights,
+      handSize: json['handSize'] as int?,
+      newPhotoShare: (json['newPhotoShare'] as num?)?.toDouble(),
+    );
   }
 
   Future<void> _save() => ref.read(photoRepoProvider).setPref(
@@ -198,6 +202,7 @@ class DealerSettings extends Notifier<DealerConfig> {
         jsonEncode({
           'modes': {for (final e in state.modeWeights.entries) e.key.name: e.value},
           'handSize': state.handSize,
+          'newPhotoShare': state.newPhotoShare,
         }),
       );
 
@@ -224,6 +229,12 @@ class DealerSettings extends Notifier<DealerConfig> {
 
   void setHandSize(int n) {
     state = state.copyWith(handSize: n);
+    _save();
+  }
+
+  /// How much of a hand may introduce photos you have never rated.
+  void setNewPhotoShare(double share) {
+    state = state.copyWith(newPhotoShare: share);
     _save();
   }
 }
