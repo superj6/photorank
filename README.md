@@ -97,8 +97,11 @@ PHOTORANK_FOLDER=~/Pictures ~/.local/opt/photorank/photorank   # first run: skip
 ```
 
 Pick folders in onboarding or Settings → Library; photos are indexed
-recursively with EXIF dates, thumbnails are cached under the app-support dir,
-and nothing is moved or modified. Keyboard: ↑/↓ or 1/2 pick in a duel, ←/→
+recursively with EXIF dates, and nothing is moved or modified. Rescans are
+incremental — unchanged files are recognised by a cheap stat rather than
+re-read — and photos deleted from a scanned folder drop out of play on the
+next launch. A folder that is unavailable (an unplugged drive) is left alone
+rather than emptied. Keyboard: ↑/↓ or 1/2 pick in a duel, ←/→
 for vibe checks, 1–5 stars, 1–9 tiles in bursts and sorts, space = pass,
 Z = undo. Share cards save to ~/Downloads. Windows/macOS are the same code
 but need those machines to build.

@@ -49,6 +49,23 @@ class PhotoRepo {
     });
   }
 
+  /// Media ids already indexed and in play, with the file modification time
+  /// recorded for them. A scan uses this to skip re-reading headers of files
+  /// that have not changed — opening a file costs ~40 ms on an external
+  /// drive, a stat costs ~0.01 ms.
+  ///
+  /// Photos currently flagged missing are deliberately excluded, so they are
+  /// re-read (and un-flagged) if they reappear.
+  Future<Map<String, DateTime?>> indexedFingerprints() async {
+    final rows = await (db.selectOnly(db.photos)
+          ..addColumns([db.photos.mediaId, db.photos.modifiedAt])
+          ..where(db.photos.missing.equals(false)))
+        .get();
+    return {
+      for (final r in rows) r.read(db.photos.mediaId)!: r.read(db.photos.modifiedAt),
+    };
+  }
+
   Future<int> count({bool includeMissing = false}) async {
     final q = db.selectOnly(db.photos)..addColumns([db.photos.id.count()]);
     if (!includeMissing) q.where(db.photos.missing.equals(false));

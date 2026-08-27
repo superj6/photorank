@@ -60,17 +60,40 @@ class FolderSource extends PhotoSource {
       }
     }
     yield ScanProgress(indexed: 0, total: files.length);
+
+    // Re-reading a known file's header costs ~40 ms on an external drive and
+    // tells us nothing new. Compare cheap stats against what is already
+    // indexed and only open the files that are new or have changed.
+    final known = await repo.indexedFingerprints();
     final seen = <String>{};
-    var indexed = 0;
+    final toRead = <String>[];
+    for (final f in files) {
+      final path = f.path;
+      seen.add(path);
+      if (!known.containsKey(path)) {
+        toRead.add(path);
+        continue;
+      }
+      final was = known[path];
+      DateTime? now;
+      try {
+        now = f.statSync().modified;
+      } catch (_) {}
+      if (was == null || now == null || was.millisecondsSinceEpoch ~/ 1000 != now.millisecondsSinceEpoch ~/ 1000) {
+        toRead.add(path);
+      }
+    }
+    var indexed = files.length - toRead.length;
+    yield ScanProgress(indexed: indexed, total: files.length);
+
     const chunk = 64;
-    for (var i = 0; i < files.length; i += chunk) {
-      final paths = files.sublist(i, (i + chunk).clamp(0, files.length)).map((f) => f.path).toList();
+    for (var i = 0; i < toRead.length; i += chunk) {
+      final paths = toRead.sublist(i, (i + chunk).clamp(0, toRead.length));
       final batch = await compute(_readHeaders, paths);
       final kept = [
         for (final a in batch)
           if (scope.since == null || (a.takenAt != null && !a.takenAt!.isBefore(scope.since!))) a,
       ];
-      seen.addAll(batch.map((a) => a.mediaId));
       await repo.upsertAssets(kept);
       indexed += paths.length;
       yield ScanProgress(indexed: indexed, total: files.length);

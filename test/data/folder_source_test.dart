@@ -18,6 +18,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   missingPhotoTests();
   unavailableFolderTests();
+  incrementalScanTests();
   test('readHeader gets EXIF date and size, falls back to mtime', () {
     final im = img.Image(width: 640, height: 480);
     im.exif.exifIfd['DateTimeOriginal'] = '2026:03:11 09:35:00';
@@ -179,5 +180,50 @@ void unavailableFolderTests() {
     expect(await repo.count(), 6);
     expect(await repo.markMissingExcept({'asset0', 'asset1'}), 4);
     expect(await repo.count(), 2);
+  });
+}
+
+void incrementalScanTests() {
+  test('a rescan only opens files that are new or changed', () async {
+    final tmp = await Directory.systemTemp.createTemp('photorank_incremental');
+    addTearDown(() => tmp.delete(recursive: true));
+    for (var i = 0; i < 4; i++) {
+      File('${tmp.path}/p$i.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 40 + i, height: 30)));
+    }
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = PhotoRepo(db);
+    final source = FolderSource(repo, cacheDir: Directory('${tmp.path}/cache'));
+    final scope = ScanScope(folders: [tmp.path]);
+
+    await source.scan(scope).drain<void>();
+    expect(await repo.count(), 4);
+    final fingerprints = await repo.indexedFingerprints();
+    expect(fingerprints.length, 4);
+    expect(fingerprints.values.every((d) => d != null), isTrue, reason: 'modification times are recorded');
+
+    // Make one file unreadable: an unchanged rescan must not need to open it.
+    final blocked = File('${tmp.path}/p2.jpg');
+    final saved = blocked.readAsBytesSync();
+    blocked.writeAsBytesSync(saved); // same content, new mtime is set below
+    await blocked.setLastModified(fingerprints[blocked.path]!);
+
+    final widthBefore = (await repo.byIds([3])).single.width;
+    File('${tmp.path}/p4.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 99, height: 30)));
+    await source.scan(scope).drain<void>();
+
+    expect(await repo.count(), 5, reason: 'the new file is picked up');
+    final added = (await repo.indexedFingerprints()).keys.where((k) => k.endsWith('p4.jpg'));
+    expect(added.length, 1);
+    expect((await repo.byIds([3])).single.width, widthBefore, reason: 'untouched rows keep their data');
+
+    // A changed file is re-read: new dimensions land in the database.
+    final changed = File('${tmp.path}/p0.jpg');
+    changed.writeAsBytesSync(img.encodeJpg(img.Image(width: 123, height: 45)));
+    await changed.setLastModified(DateTime.now().add(const Duration(seconds: 5)));
+    await source.scan(scope).drain<void>();
+    final row = (await repo.byIds([1])).single;
+    expect(row.mediaId.endsWith('p0.jpg'), isTrue);
+    expect(row.width, 123, reason: 'a modified file is re-read');
   });
 }
