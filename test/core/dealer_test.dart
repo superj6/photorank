@@ -9,6 +9,7 @@ import 'package:photorank/core/rating/observation.dart';
 void main() {
   momentDealerTests();
   newPhotoShareTests();
+  selectionSpreadTests();
   final now = DateTime(2026, 8, 24, 12);
 
   List<PhotoState> library(int n, {double rd = 350, int seed = 1, bool rated = true}) {
@@ -243,23 +244,93 @@ void newPhotoShareTests() {
     expect(cards.length, 20, reason: 'the cap yields when there is nothing else to deal');
   });
 
-  test('recency follows when a photo was taken, not when it was indexed', () {
-    final justImportedOldPhoto = PhotoState(
-      id: 1,
-      rating: Rating.initial,
-      takenAt: now.subtract(const Duration(days: 900)),
-      addedAt: now,
-    );
-    final photoTakenToday = PhotoState(
-      id: 2,
-      rating: Rating.initial,
-      takenAt: now.subtract(const Duration(hours: 2)),
-      addedAt: now,
-    );
+  test('recency follows when a photo was indexed, so new imports get ranked', () {
+    PhotoState photo(int id, {required DateTime addedAt, required int ageDays}) => PhotoState(
+          id: id,
+          rating: Rating.initial,
+          takenAt: now.subtract(Duration(days: ageDays)),
+          addedAt: addedAt,
+        );
     final rng = Random(0);
     const w = PriorityWeights(noise: 0);
-    expect(priorityOf(photoTakenToday, now, rng, w: w),
-        greaterThan(priorityOf(justImportedOldPhoto, now, rng, w: w)),
-        reason: 'a photo shot today outranks a decade-old one imported today');
+    final justIndexed = photo(1, addedAt: now, ageDays: 900);
+    final longIndexed = photo(2, addedAt: now.subtract(const Duration(days: 90)), ageDays: 900);
+    expect(priorityOf(justIndexed, now, rng, w: w), greaterThan(priorityOf(longIndexed, now, rng, w: w)),
+        reason: 'a photo added to the library today is worth asking about');
+
+    // Age alone must not matter: a bulk import lifts old and new photos alike,
+    // so the game never fixates on one stretch of the calendar.
+    final oldShot = photo(3, addedAt: now, ageDays: 1500);
+    final newShot = photo(4, addedAt: now, ageDays: 1);
+    expect(priorityOf(oldShot, now, rng, w: w), priorityOf(newShot, now, rng, w: w),
+        reason: 'same import, same priority regardless of capture date');
+  });
+}
+
+void selectionSpreadTests() {
+  final now = DateTime(2026, 8, 27, 12);
+
+  List<PhotoState> archive(int n, {required DateTime indexedAt, int idFrom = 0, bool rated = false}) => [
+        for (var i = 0; i < n; i++)
+          PhotoState(
+            id: idFrom + i,
+            rating: rated ? const Rating(mu: 1500, rd: 60) : Rating.initial,
+            observations: rated ? 4 : 0,
+            // Folder-by-folder indexing: id order tracks the calendar.
+            takenAt: now.subtract(Duration(days: 1800 - (i * 1800 ~/ n))),
+            addedAt: indexedAt,
+          ),
+      ];
+
+  test('a batch indexed today is favoured but does not crowd out the library', () {
+    final photos = [
+      ...archive(5000, indexedAt: now.subtract(const Duration(days: 200))),
+      ...archive(200, indexedAt: now, idFrom: 100000),
+    ];
+    final justIndexed = photos.where((p) => p.addedAt == now).map((p) => p.id).toSet();
+    var fresh = 0, total = 0;
+    for (var hand = 0; hand < 12; hand++) {
+      for (final c in Dealer(rng: Random(hand)).dealHand(photos, config: const DealerConfig(), now: now)) {
+        for (final id in c.photoIds) {
+          total++;
+          if (justIndexed.contains(id)) fresh++;
+        }
+      }
+    }
+    // 200 of 5200 photos is 3.8% of the library; the recency boost should lift
+    // that well above chance without taking over.
+    final share = fresh / total;
+    expect(share, greaterThan(0.05), reason: 'newly indexed photos surface more often (got $share)');
+    expect(share, lessThan(0.6), reason: 'they do not monopolise the hand (got $share)');
+  });
+
+  test('hands are not the same photos over and over', () {
+    final photos = archive(4000, indexedAt: now.subtract(const Duration(days: 30)));
+    final seen = <int>{};
+    var dealt = 0;
+    for (var hand = 0; hand < 10; hand++) {
+      for (final c in Dealer(rng: Random(hand)).dealHand(photos, config: const DealerConfig(), now: now)) {
+        seen.addAll(c.photoIds);
+        dealt += c.photoIds.length;
+      }
+    }
+    expect(seen.length, greaterThan(dealt * 0.8),
+        reason: 'independent hands should mostly show different photos '
+            '(${seen.length} distinct of $dealt dealt)');
+  });
+
+  test('a library spanning years is dealt from across those years', () {
+    final photos = archive(6000, indexedAt: now.subtract(const Duration(days: 5)));
+    final byId = {for (final p in photos) p.id: p};
+    final years = <int>{};
+    for (var hand = 0; hand < 8; hand++) {
+      for (final c in Dealer(rng: Random(hand)).dealHand(photos, config: const DealerConfig(), now: now)) {
+        for (final id in c.photoIds) {
+          years.add(byId[id]!.takenAt!.year);
+        }
+      }
+    }
+    expect(years.length, greaterThanOrEqualTo(5),
+        reason: 'photos should come from across the calendar, not one stretch (got $years)');
   });
 }

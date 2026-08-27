@@ -83,12 +83,9 @@ class Dealer {
     final used = <int>{};
     final byId = {for (final p in photos) p.id: p};
 
-    // Priority-sorted pool (priorities fixed once per hand so the sort is
-    // consistent despite the noise term); `used` filters as cards are built.
-    final priority = {
-      for (final p in photos) p.id: priorityOf(p, now, _rng, w: config.weights),
-    };
-    final ranked = [...photos]..sort((a, b) => priority[b.id]!.compareTo(priority[a.id]!));
+    // Priority decides how *likely* a photo is to come up, not a fixed queue
+    // position: see [weightedOrder]. `used` filters as cards are built.
+    final ranked = weightedOrder(photos, now, _rng, w: config.weights);
     // Top tier = best *rated* photos; an unrated library has no top yet.
     final byMu = photos.where((p) => p.observations > 0).toList()
       ..sort((a, b) => b.mu.compareTo(a.mu));
