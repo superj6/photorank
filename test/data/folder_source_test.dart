@@ -49,15 +49,28 @@ void main() {
     expect(row.takenAt, isNotNull);
     expect(row.width, greaterThan(0));
 
+    // Thumbnails decode straight to the requested long edge, no disk cache.
     final provider = source.thumb(row.mediaId, size: const ThumbnailSize(120, 120)) as FolderThumbProvider;
+    expect(provider.size, 120);
     final stream = provider.resolve(ImageConfiguration.empty);
     final done = Completer<void>();
     stream.addListener(ImageStreamListener((info, _) {
-      expect(info.image.width, 120);
+      expect(info.image.width, 120, reason: 'landscape fixture: long edge is the width');
+      expect(info.image.height, lessThan(120));
       done.complete();
     }, onError: (e, st) => done.completeError('thumb error: $e')));
     await done.future;
-    final cached = Directory('${tmp.path}/cache/thumbs').listSync();
-    expect(cached.length, 1);
+    expect(Directory('${tmp.path}/cache').existsSync(), isFalse, reason: 'no thumbnail cache is written any more');
+
+    // size 0 means the original, at full resolution.
+    final full = source.original(row.mediaId) as FolderThumbProvider;
+    expect(full.size, 0);
+    final fullStream = full.resolve(ImageConfiguration.empty);
+    final fullDone = Completer<void>();
+    fullStream.addListener(ImageStreamListener((info, _) {
+      expect(info.image.width, greaterThan(120));
+      fullDone.complete();
+    }, onError: (e, st) => fullDone.completeError('original error: $e')));
+    await fullDone.future;
   });
 }

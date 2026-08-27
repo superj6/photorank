@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:photo_manager/photo_manager.dart' show ThumbnailSize;
 
@@ -30,10 +30,15 @@ abstract class PhotoSource {
 
   Future<Uint8List?> originalBytes(String mediaId);
 
+  /// Warms the image cache for photos about to be shown. Best-effort: a photo
+  /// deleted or moved since the scan must not break the hand it appears in
+  /// (the tile itself falls back to a "missing" placeholder).
   Future<void> precache(BuildContext context, Iterable<String> mediaIds, {required ThumbnailSize size}) async {
     for (final id in mediaIds) {
       if (!context.mounted) return;
-      await precacheImage(thumb(id, size: size), context);
+      await precacheImage(thumb(id, size: size), context, onError: (e, _) {
+        debugPrint('precache skipped $id: $e');
+      });
     }
   }
 }

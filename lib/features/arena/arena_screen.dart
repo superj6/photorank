@@ -396,7 +396,8 @@ class _PickerSheet extends ConsumerWidget {
     final all = ref.watch(rankingProvider).value ?? const [];
     final today = all.where((p) => p.takenAt != null && isFromToday(p.takenAt!)).toList();
     final suggestions = onePerMoment(today.where((p) => p.observations > 0).toList(), keys: momentKeys(all));
-    final rest = today.where((p) => !suggestions.contains(p)).toList();
+    final suggested = {for (final p in suggestions) p.id};
+    final rest = today.where((p) => !suggested.contains(p.id)).toList();
     if (today.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(28),

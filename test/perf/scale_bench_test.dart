@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photorank/core/dealer/dealer.dart';
-import 'package:photorank/core/rating/glicko.dart';
 import 'package:photorank/core/rating/observation.dart';
 import 'package:photorank/core/sampler/moments.dart';
 import 'package:photorank/data/db/database.dart';

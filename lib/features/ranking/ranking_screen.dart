@@ -27,9 +27,20 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
   _Filter _filter = _Filter.top100;
   bool _onePerMoment = true;
 
+  // Moment grouping is O(library) — recompute only when the ranking itself
+  // changes, not on every rebuild (scroll, chip tap, sheet open).
+  List<PhotoState>? _keyedFor;
+  Map<int, String> _keyCache = const {};
+
+  Map<int, String> _keysFor(List<PhotoState> all) {
+    if (identical(_keyedFor, all)) return _keyCache;
+    _keyedFor = all;
+    return _keyCache = momentKeys(all);
+  }
+
   /// Rows to show: each is a moment (best + similar) in the current filter.
   List<Moment> _apply(List<PhotoState> all) {
-    final keys = momentKeys(all);
+    final keys = _keysFor(all);
     List<Moment> wrap(List<PhotoState> l) => _onePerMoment ? collapseMoments(l, keys: keys) : [for (final p in l) Moment(best: p, similar: const [])];
     final rated = all.where((p) => p.observations > 0).toList();
     return switch (_filter) {
