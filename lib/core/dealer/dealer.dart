@@ -188,6 +188,9 @@ class Dealer {
                 .where((id) => byId.containsKey(id) && !used.contains(id))
                 .toList();
             if (ids.length < 3) continue;
+            // A burst is nearly all unrated photos, so it has to answer to the
+            // same cap as every other card.
+            if (newDealt >= newQuota && ids.any((id) => isUnrated(byId[id]!))) continue;
             used.addAll(ids);
             return Card(
                 mode: mode, photoIds: ids, clusterId: cluster.first.clusterId);
