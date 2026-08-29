@@ -11,6 +11,8 @@
 
 The service-role key is never used by the app.
 
+Self-hosting on your own server: see [`docs/SELF_HOST.md`](../docs/SELF_HOST.md).
+
 ## Testing the SQL locally
 `supabase start` (Docker) applies the migrations. Then run the end-to-end
 scenario (simulated users: submit, pair, duel, rooms, reports, day close):

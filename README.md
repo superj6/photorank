@@ -153,9 +153,10 @@ docker exec -i supabase_db_photorank psql -U postgres -d postgres -v ON_ERROR_ST
 
 The scenario prints `NOTICE: ok: …` for every rule (today-only photos, one
 set unlocks the board, self-rating rejected, rooms, reports, day close,
-result pushes). For real users point the same migrations at a Supabase cloud
-project (`supabase db push`) — details, cron jobs and push setup in
-[`supabase/README.md`](supabase/README.md).
+result pushes). For real users run the same migrations on your own server
+([`docs/SELF_HOST.md`](docs/SELF_HOST.md): Supabase's Docker bundle + Caddy,
+step by step) or on a Supabase cloud project (`supabase db push`) — cron jobs
+and push setup in [`supabase/README.md`](supabase/README.md).
 
 ## Run on an Android phone
 
