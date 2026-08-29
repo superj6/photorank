@@ -10,6 +10,7 @@ import '../../data/media/favorites_sync.dart';
 import '../share/share_cards.dart';
 import '../share/share_preview_screen.dart';
 import '../shell/shell_screen.dart';
+import '../arena/friends_screen.dart';
 import '../widgets/axis_bar.dart';
 import '../widgets/photo_tile.dart';
 
@@ -123,6 +124,7 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
               PopupMenuItem(value: 'fav10', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 10 as favourites'))),
               PopupMenuItem(value: 'fav50', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 50 as favourites'))),
               PopupMenuItem(value: 'album', child: ListTile(leading: Icon(Icons.photo_album_rounded), title: Text('Export Top 50 as album'))),
+              PopupMenuItem(value: 'publish', child: ListTile(leading: Icon(Icons.group_rounded), title: Text('Publish Top 10 for friends'))),
             ],
           ),
         ],
@@ -244,6 +246,8 @@ extension on _RankingScreenState {
         final ids = rated.take(n).map((p) => p.mediaId).whereType<String>();
         final done = await FavoritesSync.markFavorites(ids);
         messenger.showSnackBar(SnackBar(content: Text(done == 0 ? 'Could not mark favourites on this device.' : 'Marked $done photos as favourites.')));
+      case 'publish':
+        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const FriendsScreen(publishOnOpen: true)));
       case 'album':
         final ok = await showDialog<bool>(
           context: context,

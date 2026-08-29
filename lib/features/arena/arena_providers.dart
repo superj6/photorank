@@ -249,6 +249,8 @@ class ArenaController extends Notifier<ArenaState> {
     await Notifications.setArenaReminder(true, hour: hour, skipToday: true);
   }
 
+  static String msg(Object e) => _msg(e);
+
   static String _msg(Object e) {
     final s = e.toString();
     final m = RegExp(r'message: ([^,}]+)').firstMatch(s);

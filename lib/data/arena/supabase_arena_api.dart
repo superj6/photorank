@@ -152,4 +152,90 @@ class SupabaseArenaApi implements ArenaApi {
     _urlCache[storagePath] = (url, DateTime.now().add(const Duration(minutes: 50)));
     return url;
   }
+
+  // --- sets ---
+
+  Map<String, dynamic> _row(Object? r) => (r as Map).cast<String, dynamic>();
+  List<Map<String, dynamic>> _rows(Object? r) => [for (final x in r as List) _row(x)];
+
+  @override
+  Future<SetSummary> publishSet({required String title, required List<SetUploadItem> items, String visibility = 'friends'}) async {
+    final uid = _client.auth.currentUser!.id;
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final paths = <String>[];
+    try {
+      for (final (i, item) in items.indexed) {
+        final path = '$uid/set/$stamp-${i + 1}.jpg';
+        await _client.storage.from(ArenaConfig.bucket).uploadBinary(path, Uint8List.fromList(item.bytes), fileOptions: const FileOptions(contentType: 'image/jpeg'));
+        paths.add(path);
+      }
+      // Remember the old files so they can be removed once the new set is live.
+      final old = await _mySetPaths();
+      await _client.rpc('publish_set', params: {
+        'p_title': title,
+        'p_visibility': visibility,
+        'p_items': [for (final (i, p) in paths.indexed) {'storage_path': p, 'taken_at': items[i].takenAt?.toUtc().toIso8601String()}],
+      });
+      if (old.isNotEmpty) await _client.storage.from(ArenaConfig.bucket).remove(old);
+    } catch (e) {
+      if (paths.isNotEmpty) await _client.storage.from(ArenaConfig.bucket).remove(paths);
+      rethrow;
+    }
+    return (await visibleSets()).firstWhere((s) => s.mine);
+  }
+
+  Future<List<String>> _mySetPaths() async {
+    final uid = _client.auth.currentUser!.id;
+    final set = await _client.from('sets').select('id').eq('owner_id', uid).maybeSingle();
+    if (set == null) return const [];
+    final rows = await _client.from('set_items').select('storage_path').eq('set_id', set['id'] as String);
+    return [for (final r in rows) r['storage_path'] as String];
+  }
+
+  @override
+  Future<void> unpublishSet() async {
+    final old = await _mySetPaths();
+    await _client.rpc('unpublish_set');
+    if (old.isNotEmpty) await _client.storage.from(ArenaConfig.bucket).remove(old);
+  }
+
+  @override
+  Future<void> setVisibility(String visibility) => _client.rpc('set_visibility', params: {'p_visibility': visibility});
+
+  @override
+  Future<List<SetSummary>> visibleSets() async {
+    final me = _client.auth.currentUser!.id;
+    return [for (final r in _rows(await _client.rpc('visible_sets'))) SetSummary.fromJson(r, me: me)];
+  }
+
+  @override
+  Future<SetSummary> joinSet(String code) async {
+    final id = await _client.rpc('join_set', params: {'p_code': code.trim()}) as String;
+    return (await visibleSets()).firstWhere((s) => s.id == id);
+  }
+
+  @override
+  Future<List<Pair>> setNextPairs(String setId, {int n = 10}) async =>
+      [for (final r in _rows(await _client.rpc('set_next_pairs', params: {'p_set': setId, 'p_n': n}))) Pair.fromJson(r)];
+
+  @override
+  Future<void> setRecordDuel({required String setId, required String aId, required String bId, required String winnerId}) =>
+      _client.rpc('set_record_duel', params: {'p_set': setId, 'p_a': aId, 'p_b': bId, 'p_winner': winnerId});
+
+  @override
+  Future<List<SetBoardRow>> setBoard(String setId, {String? raterId}) async =>
+      [for (final r in _rows(await _client.rpc('set_board', params: {'p_set': setId, 'p_rater': raterId}))) SetBoardRow.fromJson(r)];
+
+  @override
+  Future<List<SetRater>> setRaters(String setId) async =>
+      [for (final r in _rows(await _client.rpc('set_raters', params: {'p_set': setId}))) SetRater.fromJson(r)];
+
+  @override
+  Future<FriendRow?> findProfile(String username) async {
+    final rows = _rows(await _client.rpc('find_profile', params: {'p_username': username}));
+    return rows.isEmpty ? null : FriendRow.fromJson(rows.first);
+  }
+
+  @override
+  Future<List<FriendRow>> myFriends() async => [for (final r in _rows(await _client.rpc('my_friends'))) FriendRow.fromJson(r)];
 }

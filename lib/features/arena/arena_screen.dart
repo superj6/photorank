@@ -12,6 +12,7 @@ import 'arena_image.dart';
 import 'arena_providers.dart';
 import 'arena_rounds_screen.dart';
 import 'arena_profile_screen.dart';
+import 'friends_screen.dart';
 
 /// The Arena tab: today's entry, a round of rating, and the live board.
 class ArenaScreen extends ConsumerStatefulWidget {
@@ -42,6 +43,7 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
       appBar: AppBar(
         title: Text(s.room == null ? 'Arena · today' : 'Arena · ${s.room!.name}'),
         actions: [
+          IconButton(tooltip: 'Friends & sets', icon: const Icon(Icons.group_outlined), onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const FriendsScreen()))),
           IconButton(tooltip: 'Your arena', icon: const Icon(Icons.account_circle_outlined), onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ArenaProfileScreen()))),
           IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh_rounded), onPressed: ctl.refresh),
         ],

@@ -204,14 +204,220 @@ class FakeArenaApi implements ArenaApi {
   @override
   Future<void> registerDeviceToken(String token, {required String platform}) async {}
   @override
-  Future<void> follow(String userId, {bool unfollow = false}) async {}
-  @override
   Future<void> block(String userId) async {}
   @override
   Future<void> report(String entryId, String reason) async {}
 
   @override
   Future<String> imageUrl(String storagePath) async => 'fake://$storagePath';
+
+  // --- sets: one friend ("player2") has a published set; yours is in memory ---
+
+  final _sets = <_Set>[];
+  final _friends = <String, (bool, bool)>{'bot1': (true, true), 'bot2': (true, false), 'bot3': (false, true)};
+  var _seeded = false;
+
+  void _seedSets() {
+    if (_seeded) return;
+    _seeded = true;
+    final s = _Set(id: 'set-bot1', ownerId: 'bot1', title: 'Player 2\'s summer', visibility: 'friends', code: 'FRIEND01');
+    for (var i = 1; i <= 8; i++) {
+      s.items.add(_Item(id: 'set-bot1-$i', path: 'bot1/set/$i.jpg', ownerRank: i));
+    }
+    _sets.add(s);
+  }
+
+  _Set? get _mySet => _sets.where((s) => s.ownerId == 'me').firstOrNull;
+
+  @override
+  Future<SetSummary> publishSet({required String title, required List<SetUploadItem> items, String visibility = 'friends'}) async {
+    _seedSets();
+    if (_me?.username == null) throw StateError('claim a username first');
+    if (items.length < 3 || items.length > 50) throw StateError('a set has 3 to 50 photos');
+    _sets.removeWhere((s) => s.ownerId == 'me');
+    final s = _Set(id: 'set-me', ownerId: 'me', title: title, visibility: visibility, code: 'MYSET123');
+    for (final (i, it) in items.indexed) {
+      s.items.add(_Item(id: 'set-me-${i + 1}', path: 'me/set/${i + 1}.jpg', ownerRank: i + 1, takenAt: it.takenAt));
+    }
+    _sets.add(s);
+    // A couple of bots rate it straight away so the owner has boards to look at.
+    for (final bot in ['bot1', 'bot3']) {
+      final ratings = s.ratingsFor(bot);
+      for (var k = 0; k < s.required; k++) {
+        final a = s.items[_rng.nextInt(s.items.length)];
+        var b = s.items[_rng.nextInt(s.items.length)];
+        if (a == b) continue;
+        final winner = _rng.nextDouble() < 0.7 ? (a.ownerRank < b.ownerRank ? a : b) : (a.ownerRank < b.ownerRank ? b : a);
+        s.duel(bot, a, b, winner, ratings);
+      }
+      s.done.add(bot);
+    }
+    return _summary(s);
+  }
+
+  @override
+  Future<void> unpublishSet() async => _sets.removeWhere((s) => s.ownerId == 'me');
+
+  @override
+  Future<void> setVisibility(String visibility) async => _mySet?.visibility = visibility;
+
+  SetSummary _summary(_Set s) => SetSummary(
+        id: s.id,
+        ownerId: s.ownerId,
+        ownerUsername: s.ownerId == 'me' ? _me?.username : _profiles[s.ownerId]?.username,
+        title: s.title,
+        visibility: s.visibility,
+        linkCode: s.ownerId == 'me' ? s.code : null,
+        items: s.items.length,
+        updatedAt: DateTime.now(),
+        myDone: s.done.contains('me'),
+        myDuels: s.duels.where((d) => d.rater == 'me').length,
+        raters: s.done.length,
+        mine: s.ownerId == 'me',
+      );
+
+  @override
+  Future<List<SetSummary>> visibleSets() async {
+    _seedSets();
+    return [for (final s in _sets) if (s.ownerId == 'me' || s.visibility == 'public' || s.joined.contains('me') || _friends[s.ownerId] == (true, true)) _summary(s)];
+  }
+
+  @override
+  Future<SetSummary> joinSet(String code) async {
+    _seedSets();
+    final s = _sets.where((s) => s.code == code.trim().toUpperCase()).firstOrNull;
+    if (s == null) throw StateError('no such set');
+    if (s.visibility == 'friends' && _friends[s.ownerId] != (true, true)) throw StateError('this set is friends-only');
+    s.joined.add('me');
+    return _summary(s);
+  }
+
+  _Set _set(String id) => _sets.firstWhere((s) => s.id == id);
+
+  @override
+  Future<List<Pair>> setNextPairs(String setId, {int n = 10}) async {
+    final s = _set(setId);
+    if (s.ownerId == 'me') throw StateError('you cannot rank your own set');
+    final r = s.ratingsFor('me');
+    final pool = [...s.items]..sort((a, b) => r[b.id]!.rd.compareTo(r[a.id]!.rd));
+    final out = <Pair>[];
+    final taken = <String>{};
+    for (final a in pool) {
+      if (out.length >= n || taken.contains(a.id)) continue;
+      _Item? best;
+      for (final b in pool) {
+        if (b.id == a.id || taken.contains(b.id) || s.rated('me', a.id, b.id)) continue;
+        if (best == null || (r[b.id]!.mu - r[a.id]!.mu).abs() < (r[best.id]!.mu - r[a.id]!.mu).abs()) best = b;
+      }
+      if (best == null) continue;
+      taken.addAll([a.id, best.id]);
+      out.add(Pair(aId: a.id, bId: best.id, aPath: a.path, bPath: best.path));
+    }
+    return out;
+  }
+
+  @override
+  Future<void> setRecordDuel({required String setId, required String aId, required String bId, required String winnerId}) async {
+    final s = _set(setId);
+    if (s.done.contains('me')) throw StateError('you have already ranked this set');
+    final a = s.items.firstWhere((i) => i.id == aId), b = s.items.firstWhere((i) => i.id == bId);
+    if (s.rated('me', aId, bId)) throw StateError('pair already rated');
+    s.duel('me', a, b, winnerId == aId ? a : b, s.ratingsFor('me'));
+    if (s.duels.where((d) => d.rater == 'me').length >= s.required) s.done.add('me');
+  }
+
+  @override
+  Future<List<SetBoardRow>> setBoard(String setId, {String? raterId}) async {
+    final s = _set(setId);
+    if (raterId != null && raterId != 'me' && s.ownerId != 'me') return const [];
+    final r = raterId == null ? null : s.ratingsFor(raterId);
+    final rows = [
+      for (final i in s.items)
+        (i, r == null ? i.rating : r[i.id]!, r == null ? i.duels : s.duels.where((d) => d.rater == raterId && (d.a == i.id || d.b == i.id)).length, r == null ? i.wins : s.duels.where((d) => d.rater == raterId && d.winner == i.id).length)
+    ]..sort((x, y) {
+        final c = y.$2.mu.compareTo(x.$2.mu);
+        return c != 0 ? c : x.$1.ownerRank.compareTo(y.$1.ownerRank);
+      });
+    return [for (final (k, row) in rows.indexed) SetBoardRow(rank: k + 1, itemId: row.$1.id, storagePath: row.$1.path, ownerRank: row.$1.ownerRank, mu: row.$2.mu, duels: row.$3, wins: row.$4)];
+  }
+
+  @override
+  Future<List<SetRater>> setRaters(String setId) async {
+    final s = _set(setId);
+    if (s.ownerId != 'me') return const [];
+    final raters = {for (final d in s.duels) d.rater};
+    return [for (final r in raters) SetRater(id: r, username: _profiles[r]?.username, duels: s.duels.where((d) => d.rater == r).length, done: s.done.contains(r), startedAt: DateTime.now())];
+  }
+
+  @override
+  Future<FriendRow?> findProfile(String username) async {
+    final u = username.trim().toLowerCase();
+    final id = _profiles.entries.where((e) => e.value.username == u).firstOrNull?.key;
+    if (id == null) return null;
+    final f = _friends[id] ?? (false, false);
+    return FriendRow(id: id, username: u, iFollow: f.$1, followsMe: f.$2, hasSet: _sets.any((s) => s.ownerId == id));
+  }
+
+  @override
+  Future<List<FriendRow>> myFriends() async {
+    _seedSets();
+    return [
+      for (final e in _friends.entries)
+        if (e.value.$1 || e.value.$2) FriendRow(id: e.key, username: _profiles[e.key]?.username, iFollow: e.value.$1, followsMe: e.value.$2, hasSet: _sets.any((s) => s.ownerId == e.key)),
+    ];
+  }
+
+  @override
+  Future<void> follow(String userId, {bool unfollow = false}) async {
+    final f = _friends[userId] ?? (false, false);
+    _friends[userId] = (!unfollow, f.$2);
+  }
+}
+
+class _Set {
+  _Set({required this.id, required this.ownerId, required this.title, required this.visibility, required this.code});
+  final String id;
+  final String ownerId;
+  final String title;
+  String visibility;
+  final String code;
+  final items = <_Item>[];
+  final duels = <({String rater, String a, String b, String winner})>[];
+  final done = <String>{};
+  final joined = <String>{};
+  final _ratings = <String, Map<String, Rating>>{};
+
+  int get required => (items.length * (items.length - 1) ~/ 2).clamp(0, 15);
+  Map<String, Rating> ratingsFor(String rater) => _ratings.putIfAbsent(rater, () => {for (final i in items) i.id: const Rating(mu: 1500, rd: 350)});
+  bool rated(String rater, String a, String b) => duels.any((d) => d.rater == rater && ((d.a == a && d.b == b) || (d.a == b && d.b == a)));
+
+  void duel(String rater, _Item a, _Item b, _Item winner, Map<String, Rating> r) {
+    if (rated(rater, a.id, b.id)) return;
+    final (na, nb) = Glicko.updatePair(r[a.id]!, r[b.id]!, winner == a ? Outcome.win : Outcome.loss);
+    r[a.id] = na;
+    r[b.id] = nb;
+    final (pa, pb) = Glicko.updatePair(a.rating, b.rating, winner == a ? Outcome.win : Outcome.loss);
+    a
+      ..rating = pa
+      ..duels += 1
+      ..wins += winner == a ? 1 : 0;
+    b
+      ..rating = pb
+      ..duels += 1
+      ..wins += winner == b ? 1 : 0;
+    duels.add((rater: rater, a: a.id, b: b.id, winner: winner.id));
+  }
+}
+
+class _Item {
+  _Item({required this.id, required this.path, required this.ownerRank, this.takenAt});
+  final String id;
+  final String path;
+  final int ownerRank;
+  final DateTime? takenAt;
+  Rating rating = const Rating(mu: 1500, rd: 350);
+  int duels = 0;
+  int wins = 0;
 }
 
 class _E {

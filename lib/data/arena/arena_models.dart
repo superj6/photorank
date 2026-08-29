@@ -171,3 +171,118 @@ class DaySummary {
         myStoragePath: j['my_storage_path'] as String?,
       );
 }
+
+// ------------------------------------------------------------------ sets
+
+/// A published Top-N set (yours or a friend's).
+class SetSummary {
+  const SetSummary({
+    required this.id,
+    required this.ownerId,
+    this.ownerUsername,
+    required this.title,
+    required this.visibility,
+    this.linkCode,
+    required this.items,
+    required this.updatedAt,
+    required this.myDone,
+    required this.myDuels,
+    required this.raters,
+    required this.mine,
+  });
+  final String id;
+  final String ownerId;
+  final String? ownerUsername;
+  final String title;
+  final String visibility; // friends | link | public
+  final String? linkCode; // only on your own set
+  final int items;
+  final DateTime updatedAt;
+  final bool myDone;
+  final int myDuels;
+  final int raters; // completed passes
+  final bool mine;
+  String get ownerName => ownerUsername != null ? '@$ownerUsername' : 'A friend';
+  int get requiredDuels => (items * (items - 1) ~/ 2).clamp(0, 15);
+  static SetSummary fromJson(Map<String, dynamic> j, {required String me}) => SetSummary(
+        id: j['set_id'] as String,
+        ownerId: j['owner_id'] as String,
+        ownerUsername: j['owner_username'] as String?,
+        title: j['title'] as String,
+        visibility: j['visibility'] as String,
+        linkCode: j['link_code'] as String?,
+        items: j['items'] as int,
+        updatedAt: DateTime.parse(j['updated_at'] as String),
+        myDone: j['my_done'] as bool,
+        myDuels: j['my_duels'] as int,
+        raters: j['raters'] as int,
+        mine: j['owner_id'] == me,
+      );
+}
+
+/// One photo on a set board (a rater's own, or the pooled aggregate).
+class SetBoardRow {
+  const SetBoardRow({required this.rank, required this.itemId, required this.storagePath, required this.ownerRank, required this.mu, required this.duels, required this.wins});
+  final int rank;
+  final String itemId;
+  final String storagePath;
+  final int ownerRank;
+  final double mu;
+  final int duels;
+  final int wins;
+  double get score => mu;
+  int get moved => ownerRank - rank; // + = rated higher than the owner ranks it
+  static SetBoardRow fromJson(Map<String, dynamic> j) => SetBoardRow(
+        rank: j['rank'] as int,
+        itemId: j['item_id'] as String,
+        storagePath: j['storage_path'] as String,
+        ownerRank: j['owner_rank'] as int,
+        mu: (j['mu'] as num).toDouble(),
+        duels: j['duels'] as int,
+        wins: j['wins'] as int,
+      );
+}
+
+/// Someone who ranked (or started ranking) your set.
+class SetRater {
+  const SetRater({required this.id, this.username, required this.duels, required this.done, required this.startedAt});
+  final String id;
+  final String? username;
+  final int duels;
+  final bool done;
+  final DateTime startedAt;
+  String get name => username != null ? '@$username' : 'Anonymous';
+  static SetRater fromJson(Map<String, dynamic> j) => SetRater(
+        id: j['rater_id'] as String,
+        username: j['username'] as String?,
+        duels: j['duels'] as int,
+        done: j['done'] as bool,
+        startedAt: DateTime.parse(j['started_at'] as String),
+      );
+}
+
+/// A player found by username, with the follow relation in both directions.
+class FriendRow {
+  const FriendRow({required this.id, this.username, required this.iFollow, required this.followsMe, this.hasSet = false});
+  final String id;
+  final String? username;
+  final bool iFollow;
+  final bool followsMe;
+  final bool hasSet;
+  bool get friends => iFollow && followsMe;
+  String get name => username != null ? '@$username' : 'Anonymous';
+  static FriendRow fromJson(Map<String, dynamic> j) => FriendRow(
+        id: j['id'] as String,
+        username: j['username'] as String?,
+        iFollow: j['i_follow'] as bool,
+        followsMe: j['follows_me'] as bool,
+        hasSet: j['has_set'] as bool? ?? false,
+      );
+}
+
+/// A photo to publish: already-prepared bytes plus its capture time.
+class SetUploadItem {
+  const SetUploadItem({required this.bytes, this.takenAt});
+  final List<int> bytes;
+  final DateTime? takenAt;
+}

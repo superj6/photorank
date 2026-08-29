@@ -34,4 +34,26 @@ abstract class ArenaApi {
 
   /// A URL the image widget can load (signed, short-lived for Supabase).
   Future<String> imageUrl(String storagePath);
+
+  // --- Published sets (your Top N, ranked by friends) ---
+
+  /// Uploads every item (already downsized and stripped) and replaces your set.
+  Future<SetSummary> publishSet({required String title, required List<SetUploadItem> items, String visibility = 'friends'});
+  Future<void> unpublishSet();
+  Future<void> setVisibility(String visibility);
+
+  /// Your set first, then every friend's set you may see.
+  Future<List<SetSummary>> visibleSets();
+  Future<SetSummary> joinSet(String code);
+  Future<List<Pair>> setNextPairs(String setId, {int n = 10});
+  Future<void> setRecordDuel({required String setId, required String aId, required String bId, required String winnerId});
+
+  /// [raterId] null = the pooled aggregate; otherwise that rater's own board
+  /// (yours, or any rater's if you own the set).
+  Future<List<SetBoardRow>> setBoard(String setId, {String? raterId});
+  Future<List<SetRater>> setRaters(String setId);
+
+  // --- Friends (mutual follows) ---
+  Future<FriendRow?> findProfile(String username);
+  Future<List<FriendRow>> myFriends();
 }
