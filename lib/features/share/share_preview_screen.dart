@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
@@ -43,6 +44,11 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
         final file = File('${dir.path}/${widget.filename}');
         await file.writeAsBytes(bytes!.buffer.asUint8List());
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved to ${file.path}')));
+        return;
+      }
+      if (kIsWeb) {
+        // Browsers share bytes directly (iOS Safari: the share sheet; desktop: a download).
+        await SharePlus.instance.share(ShareParams(files: [XFile.fromData(bytes!.buffer.asUint8List(), name: widget.filename, mimeType: 'image/png')], text: widget.text));
         return;
       }
       final dir = await getTemporaryDirectory();

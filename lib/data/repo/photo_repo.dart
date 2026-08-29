@@ -134,6 +134,8 @@ class PhotoRepo {
       (db.update(db.photos)..where((p) => p.mediaId.equals(mediaId)))
           .write(const PhotosCompanion(missing: Value(true)));
 
+  Future<PhotoRow?> byMediaId(String mediaId) => (db.select(db.photos)..where((t) => t.mediaId.equals(mediaId))).getSingleOrNull();
+
   Future<PhotoRow?> byId(int id) =>
       (db.select(db.photos)..where((p) => p.id.equals(id))).getSingleOrNull();
 

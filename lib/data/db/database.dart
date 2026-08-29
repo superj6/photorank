@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 part 'database.g.dart';
@@ -29,6 +30,19 @@ class Photos extends Table {
   /// After Best-of-Burst, losers point at the winner: the burst is decided,
   /// so they are not re-dealt against it and collapse behind it in views.
   IntColumn get shadowedBy => integer().nullable()();
+}
+
+/// Web only: the downscaled bytes of an imported photo (there is no camera
+/// roll to read back from). Keyed by the photo's media id.
+@DataClassName('WebImageRow')
+class WebImages extends Table {
+  TextColumn get mediaId => text()();
+  BlobColumn get bytes => blob()();
+  IntColumn get width => integer()();
+  IntColumn get height => integer()();
+
+  @override
+  Set<Column> get primaryKey => {mediaId};
 }
 
 /// A ranking dimension. "Love" is the default; more can be added later.
@@ -153,22 +167,31 @@ class Prefs extends Table {
   Prefs,
   Beats,
   DailySnapshots,
+  WebImages,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(executor ??
-            driftDatabase(
-              name: 'photorank',
-              // Desktop: keep the database in the app-support dir, not ~/Documents.
-              native: DriftNativeOptions(
+      : super(executor ?? _open());
+
+  static QueryExecutor _open() => driftDatabase(
+        name: 'photorank',
+        // Desktop: keep the database in the app-support dir, not ~/Documents.
+        native: kIsWeb
+            ? null
+            : DriftNativeOptions(
                 databaseDirectory: (Platform.isLinux || Platform.isWindows || Platform.isMacOS) ? getApplicationSupportDirectory : null,
               ),
-            ));
+        // Web: sqlite3 compiled to wasm, persisted in the browser (OPFS or IndexedDB).
+        web: DriftWebOptions(
+          sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+          driftWorker: Uri.parse('drift_worker.js'),
+        ),
+      );
 
   static const defaultAxisName = 'Love';
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -188,6 +211,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await m.addColumn(photos, photos.shadowedBy);
+          }
+          if (from < 4) {
+            await m.createTable(webImages);
           }
         },
         beforeOpen: (details) async {

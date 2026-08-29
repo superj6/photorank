@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,8 @@ import 'package:photo_manager/photo_manager.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
+import '../../data/media/web_source.dart';
+import '../settings/import_photos.dart';
 
 /// Three steps: promise → permission → scope. Then straight into a hand.
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -39,6 +42,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _error = 'Photo access is needed to play. You can grant it in system settings.';
       });
     }
+  }
+
+  ImportProgress? _import;
+
+  Future<void> _pickPhotos() async {
+    setState(() => _busy = true);
+    final source = ref.read(photoSourceProvider) as WebSource;
+    final result = await importPhotos(source, onProgress: (p) => setState(() => _import = p));
+    if (!mounted) return;
+    if (result == null || result.added == 0) {
+      setState(() {
+        _busy = false;
+        _import = null;
+        _error = result == null ? null : 'None of those files could be read as photos.';
+      });
+      return;
+    }
+    await _start(months: null);
   }
 
   Future<void> _pickFolder() async {
@@ -83,6 +104,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       'your photos never leave this phone.',
                   action: 'Let\'s go',
                   onAction: () => setState(() => _step = 1),
+                ),
+              1 when kIsWeb => _Page(
+                  key: const ValueKey(1),
+                  icon: Icons.add_photo_alternate_rounded,
+                  title: 'Your photos',
+                  body: 'Pick photos from your library — 20 or 200, your call. They are stored in this browser only (downsized) and never uploaded. Add more any time in Settings.\n\nTip: add to your Home Screen so the browser keeps them.',
+                  action: _busy ? (_import == null ? 'Importing…' : 'Importing ${_import!.done}/${_import!.total}…') : 'Choose photos',
+                  onAction: _busy ? null : _pickPhotos,
+                  error: _error,
                 ),
               1 when desktop => _Page(
                   key: const ValueKey(1),

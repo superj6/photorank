@@ -15,6 +15,7 @@ import '../data/db/database.dart';
 import '../data/media/folder_source.dart';
 import '../data/media/media_store_source.dart';
 import '../data/media/photo_source.dart';
+import '../data/media/web_source.dart';
 import '../data/repo/axis_repo.dart';
 import '../data/repo/beat_repo.dart';
 import '../data/repo/photo_repo.dart';
@@ -31,6 +32,7 @@ final rankingRepoProvider = Provider((ref) => RankingRepo(ref.watch(dbProvider))
 /// Mobile reads the system library; desktop reads folders. Chosen once.
 final photoSourceProvider = Provider<PhotoSource>((ref) {
   final repo = ref.watch(photoRepoProvider);
+  if (kIsWeb) return WebSource(repo, ref.watch(dbProvider));
   if (Platform.isAndroid || Platform.isIOS) return MediaStoreSource(repo);
   return FolderSource(repo, cacheDir: ref.watch(cacheDirProvider));
 });

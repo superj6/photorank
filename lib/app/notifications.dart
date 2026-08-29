@@ -30,7 +30,7 @@ class Notifications {
   static bool get _canSchedule => !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
 
   static Future<void> init() async {
-    if (_ready) return;
+    if (_ready || kIsWeb) return;
     try {
       await _plugin.initialize(
         settings: const InitializationSettings(

@@ -4317,6 +4317,316 @@ class DailySnapshotsCompanion extends UpdateCompanion<DailySnapshotRow> {
   }
 }
 
+class $WebImagesTable extends WebImages
+    with TableInfo<$WebImagesTable, WebImageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WebImagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _mediaIdMeta = const VerificationMeta(
+    'mediaId',
+  );
+  @override
+  late final GeneratedColumn<String> mediaId = GeneratedColumn<String>(
+    'media_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<Uint8List> bytes = GeneratedColumn<Uint8List>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _widthMeta = const VerificationMeta('width');
+  @override
+  late final GeneratedColumn<int> width = GeneratedColumn<int>(
+    'width',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _heightMeta = const VerificationMeta('height');
+  @override
+  late final GeneratedColumn<int> height = GeneratedColumn<int>(
+    'height',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [mediaId, bytes, width, height];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'web_images';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WebImageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('media_id')) {
+      context.handle(
+        _mediaIdMeta,
+        mediaId.isAcceptableOrUnknown(data['media_id']!, _mediaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mediaIdMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    if (data.containsKey('width')) {
+      context.handle(
+        _widthMeta,
+        width.isAcceptableOrUnknown(data['width']!, _widthMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_widthMeta);
+    }
+    if (data.containsKey('height')) {
+      context.handle(
+        _heightMeta,
+        height.isAcceptableOrUnknown(data['height']!, _heightMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_heightMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {mediaId};
+  @override
+  WebImageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WebImageRow(
+      mediaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}media_id'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}bytes'],
+      )!,
+      width: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}width'],
+      )!,
+      height: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height'],
+      )!,
+    );
+  }
+
+  @override
+  $WebImagesTable createAlias(String alias) {
+    return $WebImagesTable(attachedDatabase, alias);
+  }
+}
+
+class WebImageRow extends DataClass implements Insertable<WebImageRow> {
+  final String mediaId;
+  final Uint8List bytes;
+  final int width;
+  final int height;
+  const WebImageRow({
+    required this.mediaId,
+    required this.bytes,
+    required this.width,
+    required this.height,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['media_id'] = Variable<String>(mediaId);
+    map['bytes'] = Variable<Uint8List>(bytes);
+    map['width'] = Variable<int>(width);
+    map['height'] = Variable<int>(height);
+    return map;
+  }
+
+  WebImagesCompanion toCompanion(bool nullToAbsent) {
+    return WebImagesCompanion(
+      mediaId: Value(mediaId),
+      bytes: Value(bytes),
+      width: Value(width),
+      height: Value(height),
+    );
+  }
+
+  factory WebImageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WebImageRow(
+      mediaId: serializer.fromJson<String>(json['mediaId']),
+      bytes: serializer.fromJson<Uint8List>(json['bytes']),
+      width: serializer.fromJson<int>(json['width']),
+      height: serializer.fromJson<int>(json['height']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'mediaId': serializer.toJson<String>(mediaId),
+      'bytes': serializer.toJson<Uint8List>(bytes),
+      'width': serializer.toJson<int>(width),
+      'height': serializer.toJson<int>(height),
+    };
+  }
+
+  WebImageRow copyWith({
+    String? mediaId,
+    Uint8List? bytes,
+    int? width,
+    int? height,
+  }) => WebImageRow(
+    mediaId: mediaId ?? this.mediaId,
+    bytes: bytes ?? this.bytes,
+    width: width ?? this.width,
+    height: height ?? this.height,
+  );
+  WebImageRow copyWithCompanion(WebImagesCompanion data) {
+    return WebImageRow(
+      mediaId: data.mediaId.present ? data.mediaId.value : this.mediaId,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      width: data.width.present ? data.width.value : this.width,
+      height: data.height.present ? data.height.value : this.height,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WebImageRow(')
+          ..write('mediaId: $mediaId, ')
+          ..write('bytes: $bytes, ')
+          ..write('width: $width, ')
+          ..write('height: $height')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(mediaId, $driftBlobEquality.hash(bytes), width, height);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WebImageRow &&
+          other.mediaId == this.mediaId &&
+          $driftBlobEquality.equals(other.bytes, this.bytes) &&
+          other.width == this.width &&
+          other.height == this.height);
+}
+
+class WebImagesCompanion extends UpdateCompanion<WebImageRow> {
+  final Value<String> mediaId;
+  final Value<Uint8List> bytes;
+  final Value<int> width;
+  final Value<int> height;
+  final Value<int> rowid;
+  const WebImagesCompanion({
+    this.mediaId = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WebImagesCompanion.insert({
+    required String mediaId,
+    required Uint8List bytes,
+    required int width,
+    required int height,
+    this.rowid = const Value.absent(),
+  }) : mediaId = Value(mediaId),
+       bytes = Value(bytes),
+       width = Value(width),
+       height = Value(height);
+  static Insertable<WebImageRow> custom({
+    Expression<String>? mediaId,
+    Expression<Uint8List>? bytes,
+    Expression<int>? width,
+    Expression<int>? height,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (mediaId != null) 'media_id': mediaId,
+      if (bytes != null) 'bytes': bytes,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WebImagesCompanion copyWith({
+    Value<String>? mediaId,
+    Value<Uint8List>? bytes,
+    Value<int>? width,
+    Value<int>? height,
+    Value<int>? rowid,
+  }) {
+    return WebImagesCompanion(
+      mediaId: mediaId ?? this.mediaId,
+      bytes: bytes ?? this.bytes,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (mediaId.present) {
+      map['media_id'] = Variable<String>(mediaId.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<Uint8List>(bytes.value);
+    }
+    if (width.present) {
+      map['width'] = Variable<int>(width.value);
+    }
+    if (height.present) {
+      map['height'] = Variable<int>(height.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WebImagesCompanion(')
+          ..write('mediaId: $mediaId, ')
+          ..write('bytes: $bytes, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4330,6 +4640,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PrefsTable prefs = $PrefsTable(this);
   late final $BeatsTable beats = $BeatsTable(this);
   late final $DailySnapshotsTable dailySnapshots = $DailySnapshotsTable(this);
+  late final $WebImagesTable webImages = $WebImagesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4345,6 +4656,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     prefs,
     beats,
     dailySnapshots,
+    webImages,
   ];
 }
 
@@ -8143,6 +8455,185 @@ typedef $$DailySnapshotsTableProcessedTableManager =
       DailySnapshotRow,
       PrefetchHooks Function()
     >;
+typedef $$WebImagesTableCreateCompanionBuilder = WebImagesCompanion Function({
+  required String mediaId,
+  required Uint8List bytes,
+  required int width,
+  required int height,
+  Value<int> rowid,
+});
+typedef $$WebImagesTableUpdateCompanionBuilder = WebImagesCompanion Function({
+  Value<String> mediaId,
+  Value<Uint8List> bytes,
+  Value<int> width,
+  Value<int> height,
+  Value<int> rowid,
+});
+
+class $$WebImagesTableFilterComposer
+    extends Composer<_$AppDatabase, $WebImagesTable> {
+  $$WebImagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get mediaId => $composableBuilder(
+    column: $table.mediaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WebImagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $WebImagesTable> {
+  $$WebImagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get mediaId => $composableBuilder(
+    column: $table.mediaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WebImagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WebImagesTable> {
+  $$WebImagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get mediaId =>
+      $composableBuilder(column: $table.mediaId, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<int> get width =>
+      $composableBuilder(column: $table.width, builder: (column) => column);
+
+  GeneratedColumn<int> get height =>
+      $composableBuilder(column: $table.height, builder: (column) => column);
+}
+
+class $$WebImagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WebImagesTable,
+          WebImageRow,
+          $$WebImagesTableFilterComposer,
+          $$WebImagesTableOrderingComposer,
+          $$WebImagesTableAnnotationComposer,
+          $$WebImagesTableCreateCompanionBuilder,
+          $$WebImagesTableUpdateCompanionBuilder,
+          (
+            WebImageRow,
+            BaseReferences<_$AppDatabase, $WebImagesTable, WebImageRow>,
+          ),
+          WebImageRow,
+          PrefetchHooks Function()
+        > {
+  $$WebImagesTableTableManager(_$AppDatabase db, $WebImagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WebImagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WebImagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WebImagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> mediaId = const Value.absent(),
+                Value<Uint8List> bytes = const Value.absent(),
+                Value<int> width = const Value.absent(),
+                Value<int> height = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WebImagesCompanion(
+                mediaId: mediaId,
+                bytes: bytes,
+                width: width,
+                height: height,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String mediaId,
+                required Uint8List bytes,
+                required int width,
+                required int height,
+                Value<int> rowid = const Value.absent(),
+              }) => WebImagesCompanion.insert(
+                mediaId: mediaId,
+                bytes: bytes,
+                width: width,
+                height: height,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WebImagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WebImagesTable,
+      WebImageRow,
+      $$WebImagesTableFilterComposer,
+      $$WebImagesTableOrderingComposer,
+      $$WebImagesTableAnnotationComposer,
+      $$WebImagesTableCreateCompanionBuilder,
+      $$WebImagesTableUpdateCompanionBuilder,
+      (
+        WebImageRow,
+        BaseReferences<_$AppDatabase, $WebImagesTable, WebImageRow>,
+      ),
+      WebImageRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8166,4 +8657,6 @@ class $AppDatabaseManager {
       $$BeatsTableTableManager(_db, _db.beats);
   $$DailySnapshotsTableTableManager get dailySnapshots =>
       $$DailySnapshotsTableTableManager(_db, _db.dailySnapshots);
+  $$WebImagesTableTableManager get webImages =>
+      $$WebImagesTableTableManager(_db, _db.webImages);
 }

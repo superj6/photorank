@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -121,9 +122,11 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
               PopupMenuItem(value: 'top9', child: ListTile(leading: Icon(Icons.grid_on_rounded), title: Text('Share my top 9'))),
               PopupMenuItem(value: 'one', child: ListTile(leading: Icon(Icons.looks_one_rounded), title: Text('Share my #1'))),
               PopupMenuDivider(),
-              PopupMenuItem(value: 'fav10', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 10 as favourites'))),
-              PopupMenuItem(value: 'fav50', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 50 as favourites'))),
-              PopupMenuItem(value: 'album', child: ListTile(leading: Icon(Icons.photo_album_rounded), title: Text('Export Top 50 as album'))),
+              if (!kIsWeb) ...[
+                PopupMenuItem(value: 'fav10', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 10 as favourites'))),
+                PopupMenuItem(value: 'fav50', child: ListTile(leading: Icon(Icons.favorite_rounded), title: Text('Mark Top 50 as favourites'))),
+                PopupMenuItem(value: 'album', child: ListTile(leading: Icon(Icons.photo_album_rounded), title: Text('Export Top 50 as album'))),
+              ],
               PopupMenuItem(value: 'publish', child: ListTile(leading: Icon(Icons.group_rounded), title: Text('Publish Top 10 for friends'))),
             ],
           ),

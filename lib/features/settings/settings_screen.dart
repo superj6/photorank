@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/notifications.dart';
 import '../../app/providers.dart';
+import '../../data/media/web_source.dart';
+import 'import_photos.dart';
 import '../../core/beats/beat.dart';
 import '../../core/beats/unlocks.dart';
 import '../../core/stats/progress.dart';
@@ -130,6 +132,24 @@ class SettingsScreen extends ConsumerWidget {
                     ? 'Scan complete (${scan.indexed})'
                     : 'Scanning ${scan.indexed}/${scan.total}…'),
           ),
+          if (kIsWeb)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(spacing: 8, children: [
+                ActionChip(
+                  avatar: const Icon(Icons.add_photo_alternate_outlined, size: 16),
+                  label: const Text('Add photos'),
+                  onPressed: () async {
+                    final source = ref.read(photoSourceProvider) as WebSource;
+                    final r = await importPhotos(source);
+                    if (r == null || !context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Added ${r.added} photo${r.added == 1 ? '' : 's'}${r.skipped > 0 ? ' · ${r.skipped} skipped (duplicates or unreadable)' : ''}.')));
+                    ref.invalidate(sessionProvider);
+                    ref.invalidate(libraryCountProvider);
+                  },
+                ),
+              ]),
+            ),
           if (ref.watch(photoSourceProvider).usesFolders) ...[
             for (final f in scope?.folders ?? const <String>[])
               ListTile(

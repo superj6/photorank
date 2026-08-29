@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -63,6 +64,11 @@ class _BeatOverlayState extends State<BeatOverlay> {
       final image = await boundary.toImage(pixelRatio: 2.5);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       if (bytes == null) return;
+      if (kIsWeb) {
+        await SharePlus.instance.share(ShareParams(files: [XFile.fromData(bytes.buffer.asUint8List(), name: 'photorank-${widget.beat.kind.name}.png', mimeType: 'image/png')], text: 'Ranked with PhotoRank'));
+        widget.onShared?.call();
+        return;
+      }
       final dir = isDesktop ? (await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory()) : await getTemporaryDirectory();
       final file = File('${dir.path}/photorank-${widget.beat.kind.name}-${DateTime.now().millisecondsSinceEpoch}.png');
       await file.writeAsBytes(bytes.buffer.asUint8List());
