@@ -133,7 +133,11 @@ class ArenaController extends Notifier<ArenaState> {
   }
 
   Future<void> follow(String userId, {bool unfollow = false}) async {
-    await (await _api)?.follow(userId, unfollow: unfollow);
+    try {
+      await (await _api)?.follow(userId, unfollow: unfollow);
+    } catch (e) {
+      state = state.copyWith(error: _msg(e));
+    }
     if (state.scope == 'friends') await refresh();
   }
 

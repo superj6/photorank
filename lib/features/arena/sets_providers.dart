@@ -51,6 +51,9 @@ class SetsController extends Notifier<SetsState> {
         return;
       }
       state = state.copyWith(sets: await api.visibleSets(), loading: false);
+      // Boards and rater lists are cached per set; a refresh must drop them too.
+      ref.invalidate(setRatersProvider);
+      ref.invalidate(setBoardProvider);
     } catch (e) {
       state = state.copyWith(loading: false, error: ArenaController.msg(e));
     }
@@ -160,7 +163,11 @@ class SetsController extends Notifier<SetsState> {
 
   Future<void> follow(String userId, {bool unfollow = false}) async {
     final api = await _api();
-    await api?.follow(userId, unfollow: unfollow);
+    try {
+      await api?.follow(userId, unfollow: unfollow);
+    } catch (e) {
+      state = state.copyWith(error: ArenaController.msg(e));
+    }
     ref.invalidate(friendsProvider);
     await refresh();
   }

@@ -3,6 +3,7 @@ import 'package:path/path.dart' as p;
 
 import '../../core/dealer/burst_cluster.dart';
 import '../../core/dealer/photo_state.dart';
+import '../../core/rating/anchors.dart';
 import '../../core/rating/glicko.dart';
 import '../db/database.dart';
 import '../media/scanned_asset.dart';
@@ -192,6 +193,39 @@ class PhotoRepo {
       (db.update(db.photos)..where((p) => p.id.isIn(ids.toList())))
           .write(PhotosCompanion(lastShownAt: Value(now ?? DateTime.now())));
 
+  /// What the single-photo cards said about [photoId]: the latest star
+  /// rating and the vibe verdicts, if it was ever rated that way.
+  Future<PhotoVerdicts> verdicts(int axisId, int photoId) async {
+    final rows = await (db.select(db.observations)
+          ..where((o) => o.axisId.equals(axisId) & o.subjectId.equals(photoId) & o.mode.isIn(const ['rate', 'vibeCheck']))
+          ..orderBy([(o) => OrderingTerm.desc(o.id)]))
+        .get();
+    int? stars;
+    var timesRated = 0;
+    final rateCards = <String>{};
+    var feeling = 0, notFeeling = 0;
+    bool? latestVibe;
+    for (final r in rows) {
+      if (r.mode == 'rate') {
+        if (rateCards.add(r.cardId)) timesRated++;
+        // The star level is the anchor the photo drew against (1★ … 5★).
+        if (stars == null && r.outcome == 'draw' && r.anchorMu != null) {
+          final i = Anchors.stars.indexOf(r.anchorMu!);
+          if (i >= 0) stars = i + 1;
+        }
+      } else {
+        final yes = r.outcome == 'win';
+        latestVibe ??= yes;
+        if (yes) {
+          feeling++;
+        } else {
+          notFeeling++;
+        }
+      }
+    }
+    return PhotoVerdicts(stars: stars, timesRated: timesRated, latestVibe: latestVibe, feeling: feeling, notFeeling: notFeeling);
+  }
+
   /// Wins/losses involving [photoId] on [axisId], anchors included.
   Future<(int wins, int losses)> record(int axisId, int photoId) async {
     final rows = await (db.select(db.observations)
@@ -218,4 +252,21 @@ class PhotoRepo {
   Future<void> setPref(String key, String value) => db
       .into(db.prefs)
       .insertOnConflictUpdate(PrefsCompanion.insert(key: key, value: value));
+}
+
+/// Star and vibe verdicts for one photo (null / zero when never asked).
+class PhotoVerdicts {
+  const PhotoVerdicts({this.stars, this.timesRated = 0, this.latestVibe, this.feeling = 0, this.notFeeling = 0});
+
+  /// Latest 1–5 star rating, if any.
+  final int? stars;
+  final int timesRated;
+
+  /// Latest vibe check: true = feeling it.
+  final bool? latestVibe;
+  final int feeling;
+  final int notFeeling;
+
+  bool get any => stars != null || latestVibe != null;
+  static const none = PhotoVerdicts();
 }

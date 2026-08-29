@@ -12,6 +12,10 @@ import 'set_boards_screen.dart';
 import 'set_rank_screen.dart';
 import 'sets_providers.dart';
 
+/// The app's FilledButton theme is full-width (min width ∞); inside a Row
+/// a button needs a finite minimum or layout throws.
+final inlineButton = FilledButton.styleFrom(minimumSize: const Size(0, 44));
+
 /// Friends: your published Top N and how friends rank it, friends' sets to
 /// rank, and who you follow. Friends are mutual follows.
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -48,7 +52,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         title: const Text('Friends'),
         actions: [
           IconButton(tooltip: 'Join a set by code', icon: const Icon(Icons.qr_code_rounded), onPressed: () => _join(context)),
-          IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh_rounded), onPressed: () => ctl.refresh()),
+          IconButton(
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () {
+              ref.invalidate(friendsProvider);
+              ctl.refresh();
+            },
+          ),
         ],
       ),
       body: s.loading && s.sets.isEmpty
@@ -248,6 +259,7 @@ class _MySetCard extends ConsumerWidget {
           const SizedBox(height: 12),
           Row(children: [
             FilledButton.icon(
+              style: inlineButton,
               onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetBoardsScreen(set: s))),
               icon: const Icon(Icons.leaderboard_rounded),
               label: const Text('Boards'),
@@ -276,14 +288,14 @@ class _FriendSetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = set;
     final started = s.myDuels > 0 && !s.myDone;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(backgroundColor: s.myDone ? AppTheme.accent.withValues(alpha: 0.25) : Colors.white10, child: Icon(s.myDone ? Icons.check_rounded : Icons.collections_rounded, color: s.myDone ? AppTheme.accent : Colors.white70)),
-      title: Text('${s.ownerName} · ${s.title}'),
-      subtitle: Text('${s.items} photos · ${s.myDone ? 'you ranked it' : started ? '${s.myDuels}/${s.requiredDuels} duels' : 'not ranked yet'} · ${s.raters} ranked'),
+    return _RowTile(
+      icon: s.myDone ? Icons.check_rounded : Icons.collections_rounded,
+      highlight: s.myDone,
+      title: '${s.ownerName} · ${s.title}',
+      subtitle: '${s.items} photos · ${s.myDone ? 'you ranked it' : started ? '${s.myDuels}/${s.requiredDuels} duels' : 'not ranked yet'} · ${s.raters} ranked',
       trailing: s.myDone
           ? TextButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetBoardsScreen(set: s, initialRater: 'me'))), child: const Text('Boards'))
-          : FilledButton.tonal(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetRankScreen(setId: s.id))), child: Text(started ? 'Continue' : 'Rank it')),
+          : FilledButton.tonal(style: inlineButton, onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SetRankScreen(setId: s.id))), child: Text(started ? 'Continue' : 'Rank it')),
     );
   }
 }
@@ -294,11 +306,39 @@ class _PersonTile extends StatelessWidget {
   final VoidCallback onToggle;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: CircleAvatar(backgroundColor: row.friends ? AppTheme.accent.withValues(alpha: 0.25) : Colors.white10, child: Icon(row.friends ? Icons.people_rounded : Icons.person_outline_rounded, color: row.friends ? AppTheme.accent : Colors.white70)),
-        title: Text(row.name),
-        subtitle: Text(row.friends ? 'Friends${row.hasSet ? ' · has a set' : ''}' : row.followsMe ? 'Follows you — follow back to become friends' : 'You follow them · waiting for a follow back'),
+  Widget build(BuildContext context) => _RowTile(
+        icon: row.friends ? Icons.people_rounded : Icons.person_outline_rounded,
+        highlight: row.friends,
+        title: row.name,
+        subtitle: row.friends ? 'Friends${row.hasSet ? ' · has a set' : ''}' : row.followsMe ? 'Follows you — follow back to become friends' : 'You follow them · waiting for a follow back',
         trailing: TextButton(onPressed: onToggle, child: Text(row.iFollow ? 'Unfollow' : 'Follow back')),
+      );
+}
+
+/// Avatar + two lines + an action. (ListTile asserts when its trailing
+/// button is measured inside this list, so lay it out by hand.)
+class _RowTile extends StatelessWidget {
+  const _RowTile({required this.icon, required this.highlight, required this.title, required this.subtitle, required this.trailing});
+  final IconData icon;
+  final bool highlight;
+  final String title;
+  final String subtitle;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(children: [
+          CircleAvatar(backgroundColor: highlight ? AppTheme.accent.withValues(alpha: 0.25) : Colors.white10, child: Icon(icon, color: highlight ? AppTheme.accent : Colors.white70)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          trailing,
+        ]),
       );
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/rating/glicko.dart';
+import '../../data/repo/photo_repo.dart';
 import '../share/share_cards.dart';
 import '../share/share_preview_screen.dart';
 
@@ -13,19 +14,21 @@ final _detailProvider = FutureProvider.family<_Detail?, int>((ref, id) async {
   if (row == null) return null;
   final rating = await ref.watch(rankingRepoProvider).ratingOf(axis, id);
   final (wins, losses) = await ref.watch(photoRepoProvider).record(axis, id);
+  final verdicts = await ref.watch(photoRepoProvider).verdicts(axis, id);
   final ranked = await ref.watch(rankingProvider.future);
   final rank = ranked.indexWhere((p) => p.id == id) + 1;
-  return _Detail(mediaId: row.mediaId, takenAt: row.takenAt, rating: rating, wins: wins, losses: losses, rank: rank);
+  return _Detail(mediaId: row.mediaId, takenAt: row.takenAt, rating: rating, wins: wins, losses: losses, rank: rank, verdicts: verdicts);
 });
 
 class _Detail {
-  const _Detail({required this.mediaId, this.takenAt, required this.rating, required this.wins, required this.losses, required this.rank});
+  const _Detail({required this.mediaId, this.takenAt, required this.rating, required this.wins, required this.losses, required this.rank, required this.verdicts});
   final String mediaId;
   final DateTime? takenAt;
   final Rating rating;
   final int wins;
   final int losses;
   final int rank;
+  final PhotoVerdicts verdicts;
 }
 
 class PhotoDetailScreen extends ConsumerWidget {
@@ -83,6 +86,18 @@ class PhotoDetailScreen extends ConsumerWidget {
                         _Big(label: 'Record', value: '${d.wins}–${d.losses}'),
                       ],
                     ),
+                    if (d.verdicts.any) ...[
+                      const SizedBox(height: 12),
+                      Wrap(spacing: 8, runSpacing: 6, children: [
+                        if (d.verdicts.stars != null) _Verdict(icon: Icons.star_rounded, text: '${'★' * d.verdicts.stars!}${'☆' * (5 - d.verdicts.stars!)}${d.verdicts.timesRated > 1 ? '  ·  rated ${d.verdicts.timesRated}×' : ''}'),
+                        if (d.verdicts.latestVibe != null)
+                          _Verdict(
+                            icon: d.verdicts.latestVibe! ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            text: '${d.verdicts.latestVibe! ? 'Feeling it' : 'Not feeling it'}${d.verdicts.feeling + d.verdicts.notFeeling > 1 ? '  ·  ${d.verdicts.feeling} of ${d.verdicts.feeling + d.verdicts.notFeeling}' : ''}',
+                            on: d.verdicts.latestVibe!,
+                          ),
+                      ]),
+                    ],
                     if (date != null) ...[
                       const SizedBox(height: 12),
                       Text(
@@ -118,4 +133,23 @@ class _Big extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A star rating or vibe verdict chip.
+class _Verdict extends StatelessWidget {
+  const _Verdict({required this.icon, required this.text, this.on = true});
+  final IconData icon;
+  final String text;
+  final bool on;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(color: (on ? AppTheme.accent : Colors.white).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 16, color: on ? AppTheme.accent : Colors.white60),
+          const SizedBox(width: 6),
+          Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: on ? Colors.white : Colors.white70)),
+        ]),
+      );
 }

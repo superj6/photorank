@@ -128,20 +128,20 @@ class SupabaseArenaApi implements ArenaApi {
     if (unfollow) {
       await _client.from('follows').delete().match({'follower_id': me, 'followee_id': userId});
     } else {
-      await _client.from('follows').upsert({'follower_id': me, 'followee_id': userId});
+      await _client.from('follows').upsert({'follower_id': me, 'followee_id': userId}, ignoreDuplicates: true);
     }
   }
 
   @override
   Future<void> block(String userId) async {
     final me = _client.auth.currentUser!.id;
-    await _client.from('blocks').upsert({'blocker_id': me, 'blocked_id': userId});
+    await _client.from('blocks').upsert({'blocker_id': me, 'blocked_id': userId}, ignoreDuplicates: true);
   }
 
   @override
   Future<void> report(String entryId, String reason) async {
     final me = _client.auth.currentUser!.id;
-    await _client.from('reports').upsert({'entry_id': entryId, 'reporter_id': me, 'reason': reason});
+    await _client.from('reports').upsert({'entry_id': entryId, 'reporter_id': me, 'reason': reason}, ignoreDuplicates: true);
   }
 
   @override

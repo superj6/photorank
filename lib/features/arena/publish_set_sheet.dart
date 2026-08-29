@@ -50,7 +50,10 @@ class _PublishSetSheetState extends ConsumerState<PublishSetSheet> {
   Widget build(BuildContext context) {
     final all = ref.watch(rankingProvider).value ?? const <PhotoState>[];
     final rated = onePerMoment(all.where((p) => p.observations > 0).toList(), keys: momentKeys(all)).take(50).toList();
-    final picked = _picked ??= {for (final p in rated.take(widget.preselect)) p.id};
+    // Preselect the Top N once the ranking has actually arrived (the first
+    // build can run before the stream emits).
+    if (_picked == null && rated.isNotEmpty) _picked = {for (final p in rated.take(widget.preselect)) p.id};
+    final picked = _picked ?? <int>{};
     final order = [for (final p in rated) if (picked.contains(p.id)) p.id];
     final busy = ref.watch(setsProvider).busy;
     final progress = ref.watch(setsProvider).progress;
@@ -135,6 +138,7 @@ class _PublishSetSheetState extends ConsumerState<PublishSetSheet> {
             child: Row(children: [
               Expanded(child: Text(order.length < 3 ? 'Pick at least 3.' : '${order.length} photos, in your ranking order.', style: const TextStyle(color: Colors.white54, fontSize: 12))),
               FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
                 onPressed: busy || order.length < 3
                     ? null
                     : () => Navigator.pop(context, PublishChoice(title: _title.text.trim(), visibility: _visibility, photoIds: order)),

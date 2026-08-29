@@ -26,6 +26,10 @@ Run `supabase db reset` before re-running (the scenarios are not idempotent).
 
 Point the app at the local stack with `tool/arena_local.sh run emulator|phone`.
 
+To exercise friends' sets with one device, `tool/arena_bot.sh` plays a second
+user over the REST API: `new ana`, `follow <your-username>`, `publish <dir> 6`,
+`rank <your-username>` — then refresh the Friends screen in the app.
+
 ## Result pushes ("Your photo finished #12")
 1. Create a Firebase project, add the Android app (`dev.photorank.photorank`),
    and download a **service account** JSON (Project settings → Service accounts).
