@@ -52,3 +52,5 @@ android/key.properties
 *.jks
 *.keystore
 .arena_bot/
+supabase/selfhost/.env
+supabase/selfhost/data/

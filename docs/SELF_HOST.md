@@ -6,7 +6,18 @@ The backend is a Supabase stack: Postgres (all game rules are SQL functions in
 a Docker Compose bundle for self-hosting; PhotoRank needs nothing beyond it.
 
 Requirements: a Linux box with Docker + Compose, a DNS name (e.g.
-`api.example.com`), and ports 80/443 reachable. 2 GB RAM is enough to start.
+`api.example.com`), and ports 80/443 reachable.
+
+> **Small server?** The stock bundle below runs ~12 services and wants 2 GB+.
+> `supabase/selfhost/` is a trimmed compose file with only the four services
+> the app uses (Postgres, GoTrue, PostgREST, Storage) behind your own nginx —
+> ~300 MB idle, fine on a 1 GB box with swap. Its README has the short
+> procedure; the sections on migrations, cron and the app build below apply
+> unchanged. Two gotchas met on a real deploy: the Postgres image's
+> `auth.uid()`/`auth.role()` are owned by `supabase_admin`, so GoTrue's
+> migrations fail until `ALTER FUNCTION … OWNER TO supabase_auth_admin` (the
+> compose's init script handles it), and `docker compose up` may time out on
+> the first DB init — run it again.
 
 ## 1. Get the Supabase compose bundle
 
