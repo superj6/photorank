@@ -158,6 +158,30 @@ result pushes). For real users run the same migrations on your own server
 step by step) or on a Supabase cloud project (`supabase db push`) — cron jobs
 and push setup in [`supabase/README.md`](supabase/README.md).
 
+## Web app (PWA) — iPhone and anything with a browser
+
+The same app builds for the web: **https://photorank.jgon.net**. There is no
+camera roll on the web, so photos are *imported* through the browser's picker
+(20 or 200 at a time), downscaled by the browser and kept in the browser's
+own storage (SQLite-in-wasm on IndexedDB) — nothing is uploaded except what
+you explicitly enter in the Arena or publish for friends. Arena and friends'
+sets work exactly as on Android.
+
+On iPhone: open the link in Safari → Share → **Add to Home Screen**. That
+matters beyond the icon: Safari clears storage for ordinary tabs after a week
+of non-use, but keeps it for installed web apps.
+
+Build and deploy (`web/sqlite3.wasm` + `web/drift_worker.js` ship with the
+repo and must match the locked `sqlite3`/`drift` versions):
+
+```sh
+SUPABASE_URL=https://photorank.jgon.net SUPABASE_ANON_KEY=... tool/deploy_web.sh root@host:/var/www/photorank
+```
+
+Serve the folder with `try_files $uri /index.html`, `application/wasm` for
+`.wasm`, and `Cache-Control: no-cache` on `index.html` and
+`flutter_service_worker.js` (see `supabase/selfhost/nginx-api.conf`).
+
 ## Run on an Android phone
 
 1. Enable Developer options → USB debugging on the phone, plug it in, accept
