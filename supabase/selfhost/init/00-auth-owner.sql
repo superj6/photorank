@@ -9,3 +9,8 @@ BEGIN
     EXECUTE format('ALTER FUNCTION %s OWNER TO supabase_auth_admin', r.f);
   END LOOP;
 END $$;
+
+-- The Storage API applies RLS by `set role authenticated|anon|service_role`
+-- from its own connection; it needs membership in those roles.
+GRANT anon, authenticated, service_role TO supabase_storage_admin;
+GRANT anon, authenticated, service_role TO supabase_auth_admin;
