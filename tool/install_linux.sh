@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Build the Linux desktop app and install it for the current user
 # (~/.local/opt/photorank + an application-menu entry).
+#   tool/install_linux.sh --dart-define=SUPABASE_URL=https://... --dart-define=SUPABASE_ANON_KEY=...
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export PATH="$HOME/development/flutter/bin:$PATH"
-flutter build linux --release
+# Extra args are passed to flutter build (e.g. --dart-define=SUPABASE_URL=...).
+flutter build linux --release "$@"
 DEST="$HOME/.local/opt/photorank"
 rm -rf "$DEST" && mkdir -p "$DEST" && cp -r build/linux/x64/release/bundle/. "$DEST/"
 mkdir -p "$HOME/.local/share/icons/hicolor/512x512/apps" "$HOME/.local/share/applications"
