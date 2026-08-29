@@ -54,6 +54,11 @@ Browse your ranking as a Flow, auto-collections, a Top-16 bracket, and share car
   Friends filter, report/block. "Your arena" shows every entry with where it
   finished, best days, streak and average percentile. Backed by Supabase
   (`supabase/`); see *Arena backend* below.
+- **Accounts you can't lose**: Arena starts as an anonymous account, and
+  claiming a username links it to a five-word recovery phrase (shown once,
+  no email needed). *Settings → Restore an account* signs any device — phone,
+  desktop, the web app — into the same account; an expired sign-in asks for
+  the phrase instead of silently creating a new account.
 - **Friends' sets** (opt-in, online): publish your Top 10 — or any 3–50
   photos ticked from your ranking, one per moment, in your order — so friends
   can see it and rank it. Friends are mutual follows (find people by arena

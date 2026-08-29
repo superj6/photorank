@@ -72,9 +72,13 @@ services:
       GOTRUE_JWT_SECRET: ${JWT_SECRET}
       GOTRUE_JWT_ISSUER: ${API_EXTERNAL_URL}/auth/v1
       GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "true"
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
+      # Accounts start anonymous and are linked to "<username>@users.photorank" +
+      # a recovery phrase (no mail is ever sent: autoconfirm, no SMTP).
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
       GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
       GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "false"
+      GOTRUE_PASSWORD_MIN_LENGTH: 12
       GOTRUE_RATE_LIMIT_ANONYMOUS_USERS: 30
       GOTRUE_RATE_LIMIT_TOKEN_REFRESH: 150
       GOTRUE_LOG_LEVEL: warn

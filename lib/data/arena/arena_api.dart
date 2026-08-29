@@ -26,7 +26,20 @@ abstract class ArenaApi {
   Future<Room> createRoom(String name);
   Future<Room> joinRoom(String code);
 
-  Future<void> claimUsername(String username);
+  /// Claims [username] and, in the same step, links the account to a
+  /// recovery phrase — a username is never allowed to exist without one.
+  /// Pass [recoveryPhrase] the first time; later renames keep the phrase.
+  Future<void> claimUsername(String username, {String? recoveryPhrase});
+
+  /// Signs this device into an existing account by username + phrase,
+  /// replacing whatever anonymous account it had.
+  Future<ArenaProfile> restore(String username, String recoveryPhrase);
+
+  /// Replaces the recovery phrase of a recoverable account.
+  Future<void> setRecoveryPhrase(String recoveryPhrase);
+
+  /// null when the name is free, otherwise the profile holding it.
+  Future<FriendRow?> findProfile(String username);
   Future<void> registerDeviceToken(String token, {required String platform});
   Future<void> follow(String userId, {bool unfollow = false});
   Future<void> block(String userId);
@@ -54,6 +67,5 @@ abstract class ArenaApi {
   Future<List<SetRater>> setRaters(String setId);
 
   // --- Friends (mutual follows) ---
-  Future<FriendRow?> findProfile(String username);
   Future<List<FriendRow>> myFriends();
 }

@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme.dart';
 import '../../data/arena/arena_models.dart';
+import 'account_flow.dart';
 import 'arena_providers.dart';
 import 'publish_set_sheet.dart';
 import 'set_boards_screen.dart';
@@ -109,19 +110,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     if (arena.profile == null) await ref.read(arenaProvider.notifier).load();
     if (ref.read(arenaProvider).profile?.username != null) return true;
     if (!mounted) return false;
-    final c = TextEditingController();
-    final v = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Pick a username first'),
-        content: TextField(controller: c, autofocus: true, decoration: const InputDecoration(hintText: 'letters, numbers, underscore'), onSubmitted: (v) => Navigator.pop(ctx, v)),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Save'))],
-      ),
-    );
-    final u = v?.trim().toLowerCase();
-    if (u == null || !RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(u)) return false;
-    await ref.read(arenaProvider.notifier).claimUsername(u);
-    return ref.read(arenaProvider).profile?.username != null;
+    return claimUsernameFlow(context, ref);
   }
 
   Future<void> _publish() async {

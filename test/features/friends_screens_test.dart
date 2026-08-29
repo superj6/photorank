@@ -32,7 +32,7 @@ void main() {
   testWidgets('Friends screen lays out with a friend set, people and my set (no layout exceptions)', (tester) async {
     final api = FakeArenaApi();
     await api.signIn();
-    await api.claimUsername('me_me');
+    await api.claimUsername('me_me', recoveryPhrase: 'apple-bee-cat-dog-egg');
     await api.publishSet(title: 'Mine', items: [for (var i = 0; i < 4; i++) const SetUploadItem(bytes: [1])]);
     await tester.pumpWidget(host(db, api, const FriendsScreen()));
     await settle(tester, frames: 20);

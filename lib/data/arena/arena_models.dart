@@ -130,10 +130,25 @@ class Room {
 }
 
 class ArenaProfile {
-  const ArenaProfile({required this.id, this.username, this.displayName});
+  const ArenaProfile({required this.id, this.username, this.displayName, this.recoverable = false});
   final String id;
   final String? username;
   final String? displayName;
+
+  /// Linked to a recovery phrase: can be restored on another device.
+  final bool recoverable;
+
+  ArenaProfile copyWith({String? username, bool? recoverable}) =>
+      ArenaProfile(id: id, username: username ?? this.username, displayName: displayName, recoverable: recoverable ?? this.recoverable);
+}
+
+/// Thrown when the stored session can no longer be refreshed. A recoverable
+/// account is restored with its username + phrase; nothing is recreated.
+class SessionExpired implements Exception {
+  const SessionExpired({required this.recoverable});
+  final bool recoverable;
+  @override
+  String toString() => recoverable ? 'Your sign-in expired. Restore your account with your username and recovery phrase.' : 'Your sign-in expired.';
 }
 
 /// Where the caller stands today: entered? rated the set? board unlocked?

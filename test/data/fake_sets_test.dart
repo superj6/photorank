@@ -8,7 +8,7 @@ void main() {
     await api.signIn();
     final items = [for (var i = 0; i < 5; i++) SetUploadItem(bytes: const [1], takenAt: DateTime(2026, 1, i + 1))];
     expect(() => api.publishSet(title: 'x', items: items), throwsStateError, reason: 'no username yet');
-    await api.claimUsername('me_me');
+    await api.claimUsername('me_me', recoveryPhrase: 'apple-bee-cat-dog-egg');
     expect(() => api.publishSet(title: 'x', items: items.take(2).toList()), throwsStateError);
     final s = await api.publishSet(title: 'Summer', items: items);
     expect(s.mine, isTrue);

@@ -9,6 +9,7 @@ import '../../core/sampler/moments.dart';
 import '../../data/arena/arena_models.dart';
 import '../widgets/photo_tile.dart';
 import 'arena_image.dart';
+import 'account_flow.dart';
 import 'arena_providers.dart';
 import 'arena_rounds_screen.dart';
 import 'arena_profile_screen.dart';
@@ -51,7 +52,7 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
       body: s.loading && s.board.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : s.error != null && s.profile == null
-              ? _Unavailable(message: s.error!, onRetry: ctl.load)
+              ? _Unavailable(message: s.error!, onRetry: ctl.load, onRestore: s.sessionExpired ? () => restoreAccountFlow(context, ref) : null)
               : RefreshIndicator(
                   onRefresh: ctl.refresh,
                   child: ListView(
@@ -151,9 +152,10 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
 }
 
 class _Unavailable extends StatelessWidget {
-  const _Unavailable({required this.message, required this.onRetry});
+  const _Unavailable({required this.message, required this.onRetry, this.onRestore});
   final String message;
   final VoidCallback onRetry;
+  final VoidCallback? onRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +169,12 @@ class _Unavailable extends StatelessWidget {
           const SizedBox(height: 8),
           Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60)),
           const SizedBox(height: 20),
-          FilledButton(onPressed: onRetry, child: const Text('Try again')),
+          if (onRestore != null) ...[
+            FilledButton.icon(onPressed: onRestore, icon: const Icon(Icons.restore_rounded), label: const Text('Restore my account')),
+            const SizedBox(height: 8),
+            TextButton(onPressed: onRetry, child: const Text('Try again')),
+          ] else
+            FilledButton(onPressed: onRetry, child: const Text('Try again')),
         ]),
       ),
     );

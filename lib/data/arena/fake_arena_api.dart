@@ -199,8 +199,32 @@ class FakeArenaApi implements ArenaApi {
     return createRoom('Room $code');
   }
 
+  final _linked = <String, (String phrase, ArenaProfile profile)>{}; // username -> phrase + account
+
   @override
-  Future<void> claimUsername(String username) async => _me = ArenaProfile(id: 'me', username: username);
+  Future<void> claimUsername(String username, {String? recoveryPhrase}) async {
+    final me = _me!;
+    if (!me.recoverable && recoveryPhrase == null) throw StateError('A username needs a recovery phrase.');
+    if (_profiles.values.any((p) => p.username == username) || (_linked.containsKey(username) && _linked[username]!.$2.id != me.id)) throw StateError('username taken');
+    final phrase = recoveryPhrase ?? _linked.values.firstWhere((e) => e.$2.id == me.id).$1;
+    _linked.removeWhere((_, e) => e.$2.id == me.id);
+    _me = me.copyWith(username: username, recoverable: true);
+    _linked[username] = (phrase, _me!);
+  }
+
+  @override
+  Future<ArenaProfile> restore(String username, String recoveryPhrase) async {
+    final e = _linked[username];
+    if (e == null || e.$1 != recoveryPhrase) throw StateError('Invalid login credentials');
+    return _me = e.$2;
+  }
+
+  @override
+  Future<void> setRecoveryPhrase(String recoveryPhrase) async {
+    final me = _me!;
+    if (!me.recoverable) throw StateError('claim a username first');
+    _linked[me.username!] = (recoveryPhrase, me);
+  }
   @override
   Future<void> registerDeviceToken(String token, {required String platform}) async {}
   @override

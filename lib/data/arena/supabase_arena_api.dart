@@ -17,27 +17,39 @@ class SupabaseArenaApi implements ArenaApi {
     return SupabaseArenaApi(Supabase.instance.client);
   }
 
+  /// Accounts are linked to a synthetic address; no mail is ever sent.
+  static String recoveryEmail(String username) => '${username.toLowerCase()}@users.photorank';
+
+  static bool _isRecoverable(User u) => (u.email ?? '').endsWith('@users.photorank');
+
   @override
   ArenaProfile? get me {
     final u = _client.auth.currentUser;
-    return u == null ? null : ArenaProfile(id: u.id);
+    return u == null ? null : ArenaProfile(id: u.id, recoverable: _isRecoverable(u));
   }
 
   @override
   Future<ArenaProfile> signIn() async {
-    if (_client.auth.currentUser != null) {
-      // A stored session can outlive its account (purged, or a reset dev
-      // database). Verify it; if the server no longer knows us, start fresh.
+    final stored = _client.auth.currentUser;
+    if (stored != null) {
+      // A stored session can outlive its refresh token (device clock jumps,
+      // a reset dev database). Never silently replace a recoverable account:
+      // the user restores it with their phrase instead.
       try {
         await _client.auth.getUser();
       } on AuthException {
+        if (_isRecoverable(stored)) throw const SessionExpired(recoverable: true);
         await _client.auth.signOut();
       }
     }
     if (_client.auth.currentUser == null) await _client.auth.signInAnonymously();
+    return _profile();
+  }
+
+  Future<ArenaProfile> _profile() async {
     final u = _client.auth.currentUser!;
     final row = await _client.from('profiles').select('username, display_name').eq('id', u.id).maybeSingle();
-    return ArenaProfile(id: u.id, username: row?['username'] as String?, displayName: row?['display_name'] as String?);
+    return ArenaProfile(id: u.id, username: row?['username'] as String?, displayName: row?['display_name'] as String?, recoverable: _isRecoverable(u));
   }
 
   String _day(DateTime? d) {
@@ -116,7 +128,29 @@ class SupabaseArenaApi implements ArenaApi {
       Room.fromJson(((await _client.rpc('join_room', params: {'p_code': code})) as Map).cast<String, dynamic>());
 
   @override
-  Future<void> claimUsername(String username) => _client.rpc('claim_username', params: {'p_username': username});
+  Future<void> claimUsername(String username, {String? recoveryPhrase}) async {
+    final u = _client.auth.currentUser!;
+    final linked = _isRecoverable(u);
+    if (!linked && recoveryPhrase == null) throw StateError('A username needs a recovery phrase.');
+    // Link (or re-point) the account first: if the name is taken this fails
+    // with a clear error before anything else changes.
+    await _client.auth.updateUser(UserAttributes(email: recoveryEmail(username), password: linked ? null : recoveryPhrase));
+    try {
+      await _client.rpc('claim_username', params: {'p_username': username});
+    } catch (e) {
+      if (u.email != null) await _client.auth.updateUser(UserAttributes(email: u.email)); // roll the link back
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ArenaProfile> restore(String username, String recoveryPhrase) async {
+    await _client.auth.signInWithPassword(email: recoveryEmail(username), password: recoveryPhrase);
+    return _profile();
+  }
+
+  @override
+  Future<void> setRecoveryPhrase(String recoveryPhrase) => _client.auth.updateUser(UserAttributes(password: recoveryPhrase));
 
   @override
   Future<void> registerDeviceToken(String token, {required String platform}) =>

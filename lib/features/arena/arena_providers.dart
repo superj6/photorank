@@ -6,6 +6,7 @@ import '../../app/notifications.dart';
 import '../../app/providers.dart';
 import '../../app/push.dart';
 import '../../config/arena_config.dart';
+import '../../core/recovery/recovery_phrase.dart';
 import '../../data/arena/arena_api.dart';
 import '../../data/arena/arena_models.dart';
 import '../../data/arena/fake_arena_api.dart';
@@ -37,6 +38,7 @@ class ArenaState {
     this.consent = false,
     this.busy = false,
     this.scope = 'global',
+    this.sessionExpired = false,
   });
 
   final ArenaProfile? profile;
@@ -52,6 +54,9 @@ class ArenaState {
 
   /// 'global' or 'friends' (people you follow + you).
   final String scope;
+
+  /// The stored sign-in can't be refreshed; the account is recoverable by phrase.
+  final bool sessionExpired;
 
   /// Entered today but the set is not rated yet (and there is something to rate).
   bool get needsToRate => status.hasEntry && !status.unlocked && status.left > 0;
@@ -72,6 +77,7 @@ class ArenaState {
     bool? consent,
     bool? busy,
     String? scope,
+    bool? sessionExpired,
   }) =>
       ArenaState(
         profile: profile ?? this.profile,
@@ -85,6 +91,7 @@ class ArenaState {
         consent: consent ?? this.consent,
         busy: busy ?? this.busy,
         scope: scope ?? this.scope,
+        sessionExpired: sessionExpired ?? this.sessionExpired,
       );
 }
 
@@ -102,10 +109,16 @@ class ArenaController extends Notifier<ArenaState> {
         state = state.copyWith(loading: false, error: 'Arena is not available in this build.');
         return;
       }
-      final profile = await api.signIn();
+      final ArenaProfile profile;
+      try {
+        profile = await api.signIn();
+      } on SessionExpired catch (e) {
+        state = state.copyWith(loading: false, error: e.toString(), sessionExpired: e.recoverable);
+        return;
+      }
       final consent = (await ref.read(photoRepoProvider).pref(prefArenaConsent)) == '1';
       final rooms = await api.myRooms();
-      state = state.copyWith(profile: profile, rooms: rooms, consent: consent);
+      state = state.copyWith(profile: profile, rooms: rooms, consent: consent, sessionExpired: false);
       await refresh();
       Push.register(api);
     } catch (e) {
@@ -229,15 +242,51 @@ class ArenaController extends Notifier<ArenaState> {
     }
   }
 
-  Future<void> claimUsername(String username) async {
+  /// Claims a username. The first time this also links the account to a
+  /// freshly generated recovery phrase, which is returned so the UI can show
+  /// it once; later renames return null. Throws with a readable message.
+  Future<String?> claimUsername(String username) async {
     final api = await _api;
-    if (api == null) return;
+    if (api == null) throw StateError('Arena is not available in this build.');
+    final u = username.trim().toLowerCase();
+    if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(u)) throw StateError('3–20 letters, numbers or underscores.');
+    final taken = await api.findProfile(u);
+    if (taken != null) throw StateError('@$u is taken.');
+    final profile = state.profile ?? await api.signIn();
+    final phrase = profile.recoverable ? null : RecoveryPhrase.generate();
     try {
-      await api.claimUsername(username);
-      state = state.copyWith(profile: ArenaProfile(id: state.profile!.id, username: username.toLowerCase()));
+      await api.claimUsername(u, recoveryPhrase: phrase);
     } catch (e) {
-      state = state.copyWith(error: _msg(e));
+      throw StateError(_msg(e));
     }
+    state = state.copyWith(profile: profile.copyWith(username: u, recoverable: true));
+    return phrase;
+  }
+
+  /// Signs this device into an existing account and reloads everything.
+  Future<void> restore(String username, String phrase) async {
+    final api = await _api;
+    if (api == null) throw StateError('Arena is not available in this build.');
+    try {
+      await api.restore(username.trim().toLowerCase(), RecoveryPhrase.normalize(phrase));
+    } catch (e) {
+      final m = _msg(e);
+      throw StateError(m.contains('Invalid login') ? 'No account with that username and phrase.' : m);
+    }
+    state = const ArenaState();
+    await load();
+  }
+
+  Future<String> newRecoveryPhrase() async {
+    final api = await _api;
+    if (api == null) throw StateError('Arena is not available in this build.');
+    final phrase = RecoveryPhrase.generate();
+    try {
+      await api.setRecoveryPhrase(phrase);
+    } catch (e) {
+      throw StateError(_msg(e));
+    }
+    return phrase;
   }
 
   Future<void> report(String entryId) async => (await _api)?.report(entryId, 'inappropriate');

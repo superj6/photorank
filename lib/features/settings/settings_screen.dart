@@ -12,6 +12,7 @@ import '../../core/beats/beat.dart';
 import '../../core/beats/unlocks.dart';
 import '../../core/stats/progress.dart';
 import '../../core/rating/observation.dart';
+import '../arena/account_flow.dart';
 import '../arena/arena_providers.dart';
 import '../play/session_controller.dart';
 import '../widgets/axis_bar.dart';
@@ -419,27 +420,33 @@ class _ArenaProfileTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(arenaProvider);
     final name = s.profile?.username;
-    return ListTile(
-      leading: const Icon(Icons.badge_outlined),
-      title: Text(name == null ? 'Claim a username' : '@$name'),
-      subtitle: Text(name == null ? 'So friends can find you on the arena board' : 'Your arena name'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () async {
-        if (s.profile == null) await ref.read(arenaProvider.notifier).load();
-        if (!context.mounted) return;
-        final c = TextEditingController(text: name ?? '');
-        final v = await showDialog<String>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Username'),
-            content: TextField(controller: c, decoration: const InputDecoration(hintText: 'letters, numbers, underscore'), onSubmitted: (v) => Navigator.pop(ctx, v)),
-            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Save'))],
-          ),
-        );
-        final u = v?.trim().toLowerCase();
-        if (u != null && RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(u)) await ref.read(arenaProvider.notifier).claimUsername(u);
-      },
-    );
+    final recoverable = s.profile?.recoverable ?? false;
+    return Column(children: [
+      ListTile(
+        leading: const Icon(Icons.badge_outlined),
+        title: Text(name == null ? 'Claim a username' : '@$name'),
+        subtitle: Text(name == null
+            ? 'So friends can find you — comes with a recovery phrase'
+            : recoverable
+                ? 'Recoverable on any device with your phrase'
+                : 'Not recoverable yet — rename to get a recovery phrase'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => claimUsernameFlow(context, ref),
+      ),
+      if (recoverable)
+        ListTile(
+          leading: const Icon(Icons.key_rounded),
+          title: const Text('New recovery phrase'),
+          subtitle: const Text('Lost it? Generate a new one (the old one stops working)'),
+          onTap: () => newRecoveryPhraseFlow(context, ref),
+        ),
+      ListTile(
+        leading: const Icon(Icons.restore_rounded),
+        title: const Text('Restore an account'),
+        subtitle: const Text('Sign this device into an account with its username and recovery phrase'),
+        onTap: () => restoreAccountFlow(context, ref),
+      ),
+    ]);
   }
 }
 

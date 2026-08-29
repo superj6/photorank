@@ -31,8 +31,11 @@ Arena is an opt-in daily game. Nothing below happens unless you enter a photo.
   to at most 1280 px on its long edge, with all metadata (location, camera,
   time) removed. It is stored on our server (hosted by Supabase) so other
   players can rate it and it can appear on that day's leaderboard.
-- **Identity:** you get an anonymous account tied to your device. You may
-  optionally choose a username; it is shown next to your photo.
+- **Identity:** you get an anonymous account tied to your device. Choosing a
+  username links that account to a **recovery phrase** (five random words)
+  so it can be restored on another device or after a reinstall; the link is
+  stored as a synthetic `username@users.photorank` address — no email is
+  ever sent or collected. The username is shown next to your photo.
 - **What others see:** your entry photo, your username (or "Anonymous"), and
   its rank. Your other photos, ratings and library are never uploaded.
 - **What we record:** your entries, the duels you rate (which of two photos
