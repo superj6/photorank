@@ -44,6 +44,13 @@ Arena is an opt-in daily game. Nothing below happens unless you enter a photo.
   registers a push token for your device with our server so it can tell you
   where your photo finished. The token identifies the device only and is
   deleted when it stops working or when your account is deleted.
+- **Published sets (optional):** you may publish a set of 3–50 of your
+  photos for friends to rank. Only the photos you tick are uploaded, prepared
+  exactly like an Arena entry (≤1280 px, metadata removed). By default only
+  mutual follows can see a set; you can widen that to a link code or public,
+  and narrow it again. Unpublishing deletes the photos and every friend's
+  ranking of them from the server. We record which photo each rater picked
+  in each duel so the owner can see each friend's order and the pooled order.
 - **Moderation:** entries can be reported and blocked in the app. Reported
   photos are hidden pending review; accounts posting abusive or illegal
   content are banned. You must be 13 or older to use Arena.

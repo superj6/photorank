@@ -17,8 +17,12 @@ scenario (simulated users: submit, pair, duel, rooms, reports, day close):
 
     docker exec -i supabase_db_photorank psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/arena_scenario.sql
 
+Friends' sets (publish, visibility, link codes, one pass per rater, boards):
+
+    docker exec -i supabase_db_photorank psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/sets_scenario.sql
+
 Every check prints `NOTICE: ok: …`; any `FAIL` or `ERROR` is a regression.
-Run `supabase db reset` before re-running (the scenario is not idempotent).
+Run `supabase db reset` before re-running (the scenarios are not idempotent).
 
 Point the app at the local stack with `tool/arena_local.sh run emulator|phone`.
 

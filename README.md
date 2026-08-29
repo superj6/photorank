@@ -54,6 +54,14 @@ Browse your ranking as a Flow, auto-collections, a Top-16 bracket, and share car
   Friends filter, report/block. "Your arena" shows every entry with where it
   finished, best days, streak and average percentile. Backed by Supabase
   (`supabase/`); see *Arena backend* below.
+- **Friends' sets** (opt-in, online): publish your Top 10 — or any 3–50
+  photos ticked from your ranking, one per moment, in your order — so friends
+  can see it and rank it. Friends are mutual follows (find people by arena
+  username); a set is friends-only by default, or friends + an 8-character
+  code, or public. Each friend ranks a set once (up to 15 duels) and then
+  sees their order next to yours; you see a board per friend and a pooled
+  "everyone" board, each row marked with how far it moved from your own rank.
+  Unpublish removes the photos and every ranking of them.
 - **Notifications**: opt-in daily/weekly reminders, a daily "enter today's
   arena" nudge at a chosen hour (skipped on days you already entered), and
   server pushes when a day closes ("Your photo finished #12") via FCM — see
@@ -181,26 +189,17 @@ Store copy, data-safety answers, and the release checklist live in
 
 ## Ideas on the roadmap
 
-Not built yet — recorded here so they are not lost. Full staging in
-[`docs/ROADMAP.md`](docs/ROADMAP.md).
+Full staging in [`docs/ROADMAP.md`](docs/ROADMAP.md). The two items that
+used to live here — publish your Top N, friends rank your set — shipped as
+*Friends' sets* above. Still open:
 
-- **A profile that shows your Top N.** Publish your top 10 (or any N) from
-  your own library to a profile page friends can open — the mobile/desktop
-  ranking finally has an audience, not just the one-photo-a-day Arena entry.
-  Needs: per-photo opt-in before anything leaves the device, a "publish my
-  top N" action that uploads only those photos (downsized, metadata
-  stripped, exactly like an Arena entry), a way to unpublish, and a profile
-  URL that works for someone without the app.
-- **Rank your friends' top N.** Once friends publish their sets, those photos
-  become a deck you can rank — and your friend sees the resulting order: how
-  *other people* would sort their favourites. The rating engine already does
-  this (it is the Arena's pairwise Glicko over a fixed pool); the new parts
-  are a per-friend pool instead of a daily one, a "your friends ranked your
-  top 10 like this" view for the owner, and per-set permissions (friends
-  only / link / public).
-- Open questions worth settling first: is a set ranked once or continuously;
-  does the owner see who voted or only the aggregate; does ranking a friend's
-  set feed your own library ranking at all (probably not — different question).
+- A profile page that works for someone without the app (a web view of a
+  public set).
+- Continuous ranking of a set (today each friend ranks it once), and the
+  owner re-publishing without losing friends' passes when only the order
+  changed.
+- Should ranking a friend's set feed your own library ranking? Leaning no —
+  it answers a different question.
 
 ## Layout
 

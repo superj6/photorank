@@ -74,22 +74,21 @@ Goal: durable, multi-device, and shareable at distance — still photo-private.
 - Friend challenges ("rank my 16"); shared trip albums ranked by everyone.
 - Public taste profile / Wrapped page as the viral surface.
 
-## Phase 6b — Friends' sets (new, from the 2026-08-27 conversation)
+## Phase 6b — Friends' sets (shipped 2026-08-28)
 Turning the *library* ranking (not just the daily Arena entry) into something
-friends can see and act on.
-- **Publish "my top N".** An explicit, per-photo opt-in action that uploads
-  your top 10/25/N (downsized, metadata stripped) to a profile friends can
-  open. Unpublish must be one tap. Reuses the Arena upload path, entries
-  table shape, and moderation (report/block).
-- **Friends rank your set.** A friend's published set becomes a deck: you
-  duel through it, and the owner sees the aggregate order — "here is how
-  your friends would rank your favourites", plus where it disagrees with
-  their own ranking. Same Glicko-over-a-fixed-pool as an arena day, but
-  scoped to one owner's set rather than one calendar day.
-- **Per-set visibility**: friends only / anyone with the link / public.
-- Design questions: one-shot vs continuous ranking of a set; aggregate-only
-  vs named voters; whether ranking a friend's set touches your own library
-  ratings (leaning no — it answers a different question).
+friends can see and act on. Decisions taken: a set is ranked **once** per
+friend; the owner sees **named** per-friend boards *and* a pooled aggregate;
+visibility defaults to **friends only** (mutual follows), with friends + link
+code and public as options; ranking a friend's set never touches your own
+library ratings.
+- Done: `supabase/migrations/0006_sets.sql` (sets, items, per-rater ratings,
+  duels, passes, link access; `publish_set`, `visible_sets`, `set_next_pairs`,
+  `set_record_duel`, `set_board`, `set_raters`, `find_profile`, `my_friends`),
+  scenario test, Friends screen, publish sheet from the ranking, set ranking,
+  boards with owner-order deltas.
+- Next: a web view of a public set for people without the app; keep friends'
+  passes when a re-publish only reorders; notifications ("@ana ranked your
+  set"); a "most controversial photo" beat from the set boards.
 
 ## Phase 7 — Everyday layer (beyond 1.0)
 - Android TV / Chromecast screensaver from Top Shelf; watch face.
