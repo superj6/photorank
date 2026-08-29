@@ -27,13 +27,13 @@ class BeatPageView extends StatelessWidget {
       MoverPage p => _Frame(
           eyebrow: 'Climber',
           title: p.rankBefore != null && p.rankAfter != null ? 'From #${p.rankBefore} to #${p.rankAfter}' : 'On the rise',
-          footer: 'Score ${p.scoreBefore.round()} → ${p.scoreAfter.round()} this hand',
+          footer: 'Rating ${p.scoreBefore.round()} → ${p.scoreAfter.round()} this hand',
           child: _Hero(id: p.photoId, badge: '+${p.delta.round()}'),
         ),
       ThenVsNowPage p => _Frame(
           eyebrow: 'Then vs now',
           title: '${p.decisionsBetween} decisions later',
-          footer: 'Started at ${p.scoreThen.round()}, now ${p.scoreNow.round()} · ${_days(p.daysBetween)}',
+          footer: 'Rated ${p.scoreThen.round()} then, ${p.scoreNow.round()} now · ${_days(p.daysBetween)}',
           child: _Hero(id: p.photoId, badge: '${p.scoreThen.round()} → ${p.scoreNow.round()}'),
         ),
       HeadToHeadPage p => _Frame(

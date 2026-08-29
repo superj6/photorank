@@ -86,8 +86,8 @@ class BeatEngine {
 
   final Random _rng;
 
-  static const double moverMinDelta = 8;
-  static const double thenVsNowMinDelta = 5;
+  static const double moverMinDelta = 80;
+  static const double thenVsNowMinDelta = 50;
   static const int deepCutDays = 14;
 
   Beat? build(BeatDue due, BeatInput input) {

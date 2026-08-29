@@ -14,7 +14,7 @@ class Moment {
 /// Assigns a moment key to every photo. Bursts (cluster ids) are moments;
 /// photos shot within [window] of each other with similar scores are too.
 /// Photos with no capture time are their own moment.
-Map<int, String> momentKeys(List<PhotoState> states, {Duration window = const Duration(minutes: 3), double scoreGap = 15}) {
+Map<int, String> momentKeys(List<PhotoState> states, {Duration window = const Duration(minutes: 3), double scoreGap = 150}) {
   final keys = <int, String>{};
   final byTime = states.where((s) => s.takenAt != null).toList()..sort((a, b) => a.takenAt!.compareTo(b.takenAt!));
   String? currentKey;

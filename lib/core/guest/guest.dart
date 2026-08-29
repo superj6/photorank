@@ -57,7 +57,7 @@ class GuestResult {
 class GuestGame {
   GuestGame._();
 
-  static const feelingThreshold = 55.0;
+  static const feelingThreshold = 1550.0; // rating: 'feeling it' side of average
   static const minDuelGap = 90.0; // mu
 
   static List<GuestCard> build(List<PhotoState> states, {int duels = 7, int vibes = 3, Random? rng}) {
@@ -83,7 +83,7 @@ class GuestGame {
       }
     }
     // Vibe checks: clearly liked or clearly not.
-    final clear = shuffled.where((s) => !used.contains(s.id) && (s.rating.score - feelingThreshold).abs() >= 10).toList();
+    final clear = shuffled.where((s) => !used.contains(s.id) && (s.rating.score - feelingThreshold).abs() >= 100).toList();
     for (final s in clear.take(vibes)) {
       cards.add(GuestCard.vibe(s.id, ownerFeelsIt: s.rating.score >= feelingThreshold));
     }

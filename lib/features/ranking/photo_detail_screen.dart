@@ -78,7 +78,7 @@ class PhotoDetailScreen extends ConsumerWidget {
                     Row(
                       children: [
                         _Big(label: 'Rank', value: d.rank > 0 ? '#${d.rank}' : '—'),
-                        _Big(label: 'Score', value: '${d.rating.score.round()}'),
+                        _Big(label: 'Rating', value: '${d.rating.score.round()}'),
                         _Big(label: 'Settled', value: '${(d.rating.confidence * 100).round()}%'),
                         _Big(label: 'Record', value: '${d.wins}–${d.losses}'),
                       ],

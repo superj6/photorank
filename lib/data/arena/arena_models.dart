@@ -31,7 +31,7 @@ class BoardRow {
   final int total;
 
   String get name => username != null ? '@$username' : (displayName ?? 'Anonymous');
-  double get score => ((mu - 1000) / 1000 * 100).clamp(0, 100).toDouble();
+  double get score => mu;
 
   static BoardRow fromJson(Map<String, dynamic> j) => BoardRow(
         rank: j['rank'] as int,
@@ -60,7 +60,7 @@ class MyEntry {
   final int wins;
   final bool settled;
   final int total;
-  double get score => ((mu - 1000) / 1000 * 100).clamp(0, 100).toDouble();
+  double get score => mu;
   int get percentile => total <= 1 ? 100 : (100 - (rank - 1) * 100 ~/ total).clamp(1, 100);
 
   static MyEntry fromJson(Map<String, dynamic> j) => MyEntry(

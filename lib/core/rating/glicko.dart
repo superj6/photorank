@@ -12,10 +12,10 @@ class Rating {
   final double mu;
   final double rd;
 
-  /// 0–100 display score: the chance (in %) this photo beats an average
-  /// (mu 1500) photo. 1500 → 50, 2000 → 95, 2300 → 99. It approaches but
-  /// never reaches 100, so a growing library never piles up at a ceiling.
-  double get score => 100 / (1 + math.pow(10, -(mu - initialMu) / 400));
+  /// The number shown to the user: the raw Glicko rating itself (Elo-like,
+  /// starts at 1500, no ceiling). Kept under this name so deltas and gates
+  /// read the same as the display.
+  double get score => mu;
 
   /// 0 = brand new, 1 = fully settled.
   double get confidence =>

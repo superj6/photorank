@@ -40,12 +40,8 @@ void main() {
       expect(r.rd, lessThanOrEqualTo(Rating.initialRd));
     });
 
-    test('score is a win chance vs an average photo and never saturates', () {
-      expect(Rating.initial.score, closeTo(50, 1e-9));
-      expect(const Rating(mu: 2000, rd: 30).score, closeTo(94.7, 0.1));
-      expect(const Rating(mu: 500, rd: 350).score, greaterThan(0));
-      expect(const Rating(mu: 2500, rd: 30).score, lessThan(100));
-      // Strictly monotonic: two photos never tie in the display at the top.
+    test('the displayed score is the raw rating', () {
+      expect(Rating.initial.score, 1500);
       expect(const Rating(mu: 2280, rd: 30).score, greaterThan(const Rating(mu: 2270, rd: 30).score));
       expect(Rating.initial.confidence, 0);
       expect(const Rating(mu: 1500, rd: 30).confidence, 1);
