@@ -6,7 +6,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photorank/data/db/database.dart';
+import 'package:photorank/data/db/database.dart' show AppDatabase, PhotoRow;
 import 'package:photorank/data/media/folder_source.dart';
 import 'package:photorank/data/media/library_scanner.dart';
 import 'package:photo_manager/photo_manager.dart' show ThumbnailSize;
@@ -209,23 +209,24 @@ void incrementalScanTests() {
     blocked.writeAsBytesSync(saved); // same content, new mtime is set below
     await blocked.setLastModified(fingerprints[blocked.path]!);
 
-    final widthBefore = (await repo.byIds([3])).single.width;
+    // Directory listing order is filesystem-dependent: look rows up by path.
+    Future<PhotoRow> rowFor(String name) async =>
+        (await repo.byIds(List.generate(10, (i) => i + 1))).firstWhere((r) => r.mediaId.endsWith(name));
+    final widthBefore = (await rowFor('p3.jpg')).width;
     File('${tmp.path}/p4.jpg').writeAsBytesSync(img.encodeJpg(img.Image(width: 99, height: 30)));
     await source.scan(scope).drain<void>();
 
     expect(await repo.count(), 5, reason: 'the new file is picked up');
     final added = (await repo.indexedFingerprints()).keys.where((k) => k.endsWith('p4.jpg'));
     expect(added.length, 1);
-    expect((await repo.byIds([3])).single.width, widthBefore, reason: 'untouched rows keep their data');
+    expect((await rowFor('p3.jpg')).width, widthBefore, reason: 'untouched rows keep their data');
 
     // A changed file is re-read: new dimensions land in the database.
     final changed = File('${tmp.path}/p0.jpg');
     changed.writeAsBytesSync(img.encodeJpg(img.Image(width: 123, height: 45)));
     await changed.setLastModified(DateTime.now().add(const Duration(seconds: 5)));
     await source.scan(scope).drain<void>();
-    final row = (await repo.byIds([1])).single;
-    expect(row.mediaId.endsWith('p0.jpg'), isTrue);
-    expect(row.width, 123, reason: 'a modified file is re-read');
+    expect((await rowFor('p0.jpg')).width, 123, reason: 'a modified file is re-read');
   });
 }
 
