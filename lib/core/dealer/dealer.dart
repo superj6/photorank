@@ -11,9 +11,12 @@ export 'priority.dart';
 
 /// One thing to put in front of the user.
 class Card {
-  const Card({required this.mode, required this.photoIds, this.clusterId});
+  const Card({required this.mode, required this.photoIds, this.clusterId, this.championId});
 
   final GameMode mode;
+
+  /// Challenger: which photo is the current top-tier one (badge goes there).
+  final int? championId;
 
   /// duel/challenger: [a, b]; vibeCheck/rate: [a]; sort3: 3 ids;
   /// bestOfBurst: 3–9 ids.
@@ -124,23 +127,40 @@ class Dealer {
       return null;
     }
 
-    PhotoState? opponentFor(PhotoState a, {bool Function(PhotoState)? where}) {
+    /// The most informative opponent for [a]: a photo of similar rating,
+    /// taken in priority order. Two refinements against systematic bias:
+    ///
+    /// * [preferRated]: for a photo that has never been rated, the head of
+    ///   the priority list is other never-rated photos, so left alone the
+    ///   game pairs strangers with strangers — which places neither on the
+    ///   ladder. Prefer an already-rated opponent inside the window, so a
+    ///   new photo is measured against something known.
+    /// * [ignoreWindow]: the nearest-rating fallback is systematic. A
+    ///   challenger far below the Top 50 would always meet the *lowest*
+    ///   top-tier photo; callers that want "any of this group" set this so
+    ///   the pick follows the weighted order instead.
+    PhotoState? opponentFor(PhotoState a, {bool Function(PhotoState)? where, bool preferRated = false, bool ignoreWindow = false}) {
       final window = max(a.rd, 100.0);
       PhotoState? best;
+      PhotoState? firstInWindow;
       var bestDist = double.infinity;
       for (final p in ranked) {
         if (p.id == a.id || used.contains(p.id)) continue;
         if (a.clusterId != null && p.clusterId == a.clusterId) continue; // never duel your own burst
         if (blocked(p)) continue;
         if (where != null && !where(p)) continue;
+        if (ignoreWindow) return p; // weighted order, no rating constraint
         final dist = (p.mu - a.mu).abs();
-        if (dist <= window) return p; // ranked is priority-ordered
+        if (dist <= window) {
+          if (!preferRated || !isUnrated(p)) return p; // ranked is priority-ordered
+          firstInWindow ??= p;
+        }
         if (dist < bestDist) {
           best = p;
           bestDist = dist;
         }
       }
-      return best;
+      return firstInWindow ?? best;
     }
 
     Card? build(GameMode mode) {
@@ -154,20 +174,24 @@ class Dealer {
         case GameMode.duel:
           final a = next();
           if (a == null) return null;
-          final b = opponentFor(a);
+          final b = opponentFor(a, preferRated: isUnrated(a));
           if (b == null) return null;
           take(a);
           take(b);
-          return Card(mode: mode, photoIds: [a.id, b.id]);
+          // Random top/bottom: the higher-priority (often newer) photo must
+          // not always sit in the same spot, or a position habit skews it.
+          return Card(mode: mode, photoIds: _rng.nextBool() ? [a.id, b.id] : [b.id, a.id]);
         case GameMode.challenger:
           if (topTier.length < 10) return null;
           final a = next(where: (p) => !topTier.contains(p.id));
           if (a == null) return null;
-          final b = opponentFor(a, where: (p) => topTier.contains(p.id));
+          // Any top-tier photo, by weighted priority — not the nearest rating,
+          // which would be the bottom of the tier almost every time.
+          final b = opponentFor(a, where: (p) => topTier.contains(p.id), ignoreWindow: true);
           if (b == null) return null;
           take(a);
           take(b);
-          return Card(mode: mode, photoIds: [a.id, b.id]);
+          return Card(mode: mode, photoIds: _rng.nextBool() ? [a.id, b.id] : [b.id, a.id], championId: b.id);
         case GameMode.sort3:
           final a = next();
           if (a == null) return null;

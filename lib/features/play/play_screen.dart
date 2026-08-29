@@ -210,6 +210,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
           mediaOf: s.mediaOf,
           fitOf: s.fitOf,
           challenger: c.mode == GameMode.challenger,
+          championId: c.championId,
           onPick: (id) => ctl.answerDuel(id, cardIndex: idx),
           hint: firstTime ? const Pill('Tap to pick · hold to look closer', icon: Icons.touch_app_rounded) : null,
         );

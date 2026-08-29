@@ -10,6 +10,7 @@ void main() {
   momentDealerTests();
   newPhotoShareTests();
   selectionSpreadTests();
+  biasTests();
   final now = DateTime(2026, 8, 24, 12);
 
   List<PhotoState> library(int n, {double rd = 350, int seed = 1, bool rated = true}) {
@@ -75,8 +76,10 @@ void main() {
       expect(cards, isNotEmpty);
       for (final c in cards) {
         expect(c.mode, GameMode.challenger);
-        expect(top.contains(c.photoIds[0]), isFalse);
-        expect(top.contains(c.photoIds[1]), isTrue);
+        expect(c.championId, isNotNull);
+        expect(top.contains(c.championId), isTrue);
+        expect(c.photoIds.contains(c.championId), isTrue);
+        expect(top.contains(c.photoIds.firstWhere((id) => id != c.championId)), isFalse);
       }
     });
 
@@ -332,5 +335,74 @@ void selectionSpreadTests() {
     }
     expect(years.length, greaterThanOrEqualTo(5),
         reason: 'photos should come from across the calendar, not one stretch (got $years)');
+  });
+}
+
+void biasTests() {
+  final now = DateTime(2026, 8, 28, 12);
+
+  List<PhotoState> lib({int rated = 400, int unrated = 400}) => [
+        for (var i = 0; i < rated; i++)
+          PhotoState(
+            id: i,
+            rating: Rating(mu: 1200 + i * 2.0, rd: 50), // 1200..2000, well spread
+            observations: 5,
+            takenAt: now.subtract(Duration(days: i)),
+            lastShownAt: now.subtract(Duration(days: i % 25)),
+          ),
+        for (var i = 0; i < unrated; i++)
+          PhotoState(id: 10000 + i, rating: Rating.initial, takenAt: now.subtract(Duration(days: i)), addedAt: now.subtract(const Duration(days: 40))),
+      ];
+
+  test('challenger opponents are drawn from across the Top 50, not always its bottom', () {
+    final photos = lib();
+    final byId = {for (final p in photos) p.id: p};
+    final topTier = (photos.where((p) => p.observations > 0).toList()..sort((a, b) => b.mu.compareTo(a.mu))).take(50).map((p) => p.id).toSet();
+    final lowestTop = topTier.reduce((a, b) => byId[a]!.mu < byId[b]!.mu ? a : b);
+    final champions = <int, int>{};
+    for (var seed = 0; seed < 40; seed++) {
+      final cards = Dealer(rng: Random(seed)).dealHand(photos,
+          config: const DealerConfig(modeWeights: {GameMode.challenger: 1}, newPhotoShare: 0), now: now);
+      for (final c in cards.where((c) => c.mode == GameMode.challenger)) {
+        final champ = c.championId!;
+        expect(topTier.contains(champ), isTrue);
+        expect(c.photoIds.contains(champ), isTrue);
+        champions[champ] = (champions[champ] ?? 0) + 1;
+      }
+    }
+    expect(champions.length, greaterThan(15), reason: 'many different top-tier photos get challenged (got ${champions.length})');
+    final total = champions.values.fold(0, (a, b) => a + b);
+    expect((champions[lowestTop] ?? 0) / total, lessThan(0.2), reason: 'the lowest top-tier photo is not the perpetual gatekeeper');
+  });
+
+  test('a never-rated photo duels something already rated, so it lands on the ladder', () {
+    final photos = lib(rated: 300, unrated: 3000);
+    final byId = {for (final p in photos) p.id: p};
+    var mixed = 0, strangers = 0;
+    for (var seed = 0; seed < 30; seed++) {
+      final cards = Dealer(rng: Random(seed)).dealHand(photos,
+          config: const DealerConfig(modeWeights: {GameMode.duel: 1}), now: now);
+      for (final c in cards) {
+        final u = c.photoIds.where((id) => byId[id]!.observations == 0).length;
+        if (u == 1) mixed++;
+        if (u == 2) strangers++;
+      }
+    }
+    expect(mixed, greaterThan(strangers * 3), reason: 'new photos are measured against rated ones (mixed=$mixed, strangers=$strangers)');
+  });
+
+  test('the higher-priority photo is not always on top', () {
+    final photos = lib(rated: 300, unrated: 300);
+    final byId = {for (final p in photos) p.id: p};
+    var newOnTop = 0, cards = 0;
+    for (var seed = 0; seed < 40; seed++) {
+      for (final c in Dealer(rng: Random(seed)).dealHand(photos, config: const DealerConfig(modeWeights: {GameMode.duel: 1}), now: now)) {
+        final top = byId[c.photoIds[0]]!, bottom = byId[c.photoIds[1]]!;
+        if (top.observations == 0 && bottom.observations > 0) newOnTop++;
+        if ((top.observations == 0) != (bottom.observations == 0)) cards++;
+      }
+    }
+    final share = newOnTop / cards;
+    expect(share, inInclusiveRange(0.35, 0.65), reason: 'new photo on top about half the time (got $share over $cards mixed cards)');
   });
 }

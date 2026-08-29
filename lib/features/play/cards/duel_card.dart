@@ -13,6 +13,7 @@ class DuelCard extends StatefulWidget {
     required this.onPick,
     this.fitOf,
     this.challenger = false,
+    this.championId,
     this.hint,
   });
 
@@ -22,6 +23,9 @@ class DuelCard extends StatefulWidget {
   final BoxFit Function(int)? fitOf;
   final ValueChanged<int> onPick;
   final bool challenger;
+
+  /// In a Challenger card, the photo that is currently in the Top 50.
+  final int? championId;
   final Widget? hint;
 
   @override
@@ -58,7 +62,7 @@ class _DuelCardState extends State<DuelCard> {
               fit: widget.fitOf?.call(id) ?? BoxFit.cover,
               onTap: () => _pick(id),
               child: Stack(children: [
-                if (widget.challenger && !top)
+                if (widget.challenger && id == (widget.championId ?? widget.bottomId))
                   const Positioned(left: 10, top: 10, child: Pill('Top 50', icon: Icons.emoji_events, color: Color(0xFFB8860B))),
                 if (top && widget.hint != null) Positioned(left: 0, right: 0, top: 10, child: Center(child: widget.hint)),
                 if (picked)
