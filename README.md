@@ -86,6 +86,14 @@ flutter test                   # rating engine, dealer, sampler, repo tests
 flutter analyze
 ```
 
+## Download
+
+Prebuilt binaries for **Android** (APK), **Linux** (tarball) and **Windows**
+(zip, unsigned — SmartScreen will warn) are attached to each release:
+https://github.com/superj6/photorank/releases. They are built by
+`.github/workflows/release.yml` whenever a `v*` tag is pushed; CI runs the
+analyzer and tests on every push.
+
 ## Run on your computer (Linux desktop)
 
 Same app, folders instead of a camera roll. Needs the Linux toolchain

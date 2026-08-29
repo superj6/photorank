@@ -1,0 +1,3 @@
+tags:
+  perf:
+    description: Benchmarks; skipped in CI (flutter test --exclude-tags perf).

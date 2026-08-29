@@ -1,3 +1,6 @@
+@Tags(['perf'])
+library;
+
 import 'dart:math';
 
 import 'package:drift/native.dart';

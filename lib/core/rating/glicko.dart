@@ -12,8 +12,10 @@ class Rating {
   final double mu;
   final double rd;
 
-  /// 0–100 display score. ~1000 → 0, ~2000 → 100.
-  double get score => ((mu - 1000) / 1000 * 100).clamp(0, 100).toDouble();
+  /// 0–100 display score: the chance (in %) this photo beats an average
+  /// (mu 1500) photo. 1500 → 50, 2000 → 95, 2300 → 99. It approaches but
+  /// never reaches 100, so a growing library never piles up at a ceiling.
+  double get score => 100 / (1 + math.pow(10, -(mu - initialMu) / 400));
 
   /// 0 = brand new, 1 = fully settled.
   double get confidence =>
