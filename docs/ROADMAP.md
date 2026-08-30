@@ -90,6 +90,29 @@ library ratings.
   passes when a re-publish only reorders; notifications ("@ana ranked your
   set"); a "most controversial photo" beat from the set boards.
 
+## TODO — Separate rankings per user-defined album
+Today there is one library-wide ranking per axis (Love, Funny, …). Add
+**albums** the user defines (a trip, a person, a year, a hand-picked set)
+that each carry their *own* ranking, so "best photo of the Japan trip" is a
+first-class question rather than a filter over the global order.
+- Data: `albums(id, name, kind: manual|folder|date-range|device-album)` and
+  `album_photos(album_id, photo_id)`; ratings gain an `album_id` scope
+  (null = library-wide) — same Glicko engine, same observation log, scoped.
+  Rating a photo inside an album must not touch its library-wide rating
+  (different question, like axes), but a library-wide rating can seed the
+  album prior to shorten the cold start.
+- Play: an album picker next to the axis bar ("Ranking: Japan 2025 · Love");
+  the dealer draws only from the album; beats/recaps and unlocks per album.
+- Views: Ranking/Browse scoped to the album; Top N share card titled by the
+  album; publish-to-friends can take an album instead of the global Top 10.
+- Sources: on mobile map device albums (photo_manager paths) to album kind
+  `device-album` so they stay in sync; on desktop a folder = an album; on the
+  web the import batch can be named as an album.
+- Open questions: should an album's order be allowed to disagree with the
+  global one (yes — that is the point), how to show both on the photo detail,
+  and whether album membership edits should keep or drop scoped ratings
+  (keep; a photo removed from an album just leaves its rows dormant).
+
 ## Phase 7 — Everyday layer (beyond 1.0)
 - Android TV / Chromecast screensaver from Top Shelf; watch face.
 - Auto yearbook; print / photobook export of Top 50.

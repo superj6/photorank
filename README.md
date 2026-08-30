@@ -223,6 +223,9 @@ Full staging in [`docs/ROADMAP.md`](docs/ROADMAP.md). The two items that
 used to live here — publish your Top N, friends rank your set — shipped as
 *Friends' sets* above. Still open:
 
+- **Separate rankings per user-defined album** — a trip, a person, a
+  hand-picked set, each with its own order (see the TODO in
+  [`docs/ROADMAP.md`](docs/ROADMAP.md)).
 - A profile page that works for someone without the app (a web view of a
   public set).
 - Continuous ranking of a set (today each friend ranks it once), and the
