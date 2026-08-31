@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../config/arena_config.dart';
 import 'arena_api.dart';
@@ -56,8 +58,21 @@ class SupabaseArenaApi implements ArenaApi {
     return ArenaProfile(id: u.id, username: row?['username'] as String?, displayName: row?['display_name'] as String?, recoverable: _isRecoverable(u));
   }
 
+  static var _tzReady = false;
+
+  /// Arena days roll over at midnight US Pacific time (matching the server's
+  /// arena_today()); explicit dates from history rows pass through as labels.
   String _day(DateTime? d) {
-    final t = (d ?? DateTime.now().toUtc());
+    DateTime t;
+    if (d != null) {
+      t = d;
+    } else {
+      if (!_tzReady) {
+        tzdata.initializeTimeZones();
+        _tzReady = true;
+      }
+      t = tz.TZDateTime.now(tz.getLocation('America/Los_Angeles'));
+    }
     return '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
   }
 

@@ -49,8 +49,8 @@ Browse your ranking as a Flow, auto-collections, a Top-16 bracket, and share car
 - **Arena** (opt-in, online): one photo a day, and it must have been taken
   that day. After entering you rate one set of other people's photos (up to
   10 duels) — only then does today's board open to you, so nobody sees the
-  standings before contributing. Days close at 00:00 UTC; past boards are
-  final and public. Private rooms by invite code, follow players for a
+  standings before contributing. Days close at midnight Pacific time; past
+  boards are final and public. Private rooms by invite code, follow players for a
   Friends filter, report/block. "Your arena" shows every entry with where it
   finished, best days, streak and average percentile. Backed by Supabase
   (`supabase/`); see *Arena backend* below.

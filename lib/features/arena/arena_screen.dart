@@ -39,7 +39,7 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
     ref.listen(arenaProvider.select((s) => s.error), (_, err) {
       if (err != null && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     });
-    final today = DateTime.now().toUtc();
+    final today = DateTime.now();
     return Scaffold(
       appBar: AppBar(
         title: Text(s.room == null ? 'Arena · today' : 'Arena · ${s.room!.name}'),
@@ -92,7 +92,7 @@ class _ArenaScreenState extends ConsumerState<ArenaScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text('${s.board.length} photos · ${today.day}/${today.month} UTC', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text('${s.board.length} photos · ${today.day}/${today.month}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
                       const SizedBox(height: 8),
                       if (s.board.isEmpty)
                         Padding(

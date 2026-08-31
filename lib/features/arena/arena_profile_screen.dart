@@ -84,7 +84,7 @@ class ArenaProfileScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               Text('Past boards', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 4),
-              const Text('Final at midnight UTC and open to everyone.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const Text('Final at midnight Pacific time and open to everyone.', style: TextStyle(color: Colors.white54, fontSize: 12)),
               const SizedBox(height: 8),
               days.when(
                 loading: () => const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
