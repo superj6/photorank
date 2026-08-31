@@ -84,7 +84,7 @@ manual Storage setup is needed. Verify:
 
 ```sh
 psql "$DB" -v ON_ERROR_STOP=1 -f supabase/tests/arena_scenario.sql   # NOTICE: ok: ... x18
-psql "$DB" -v ON_ERROR_STOP=1 -f supabase/tests/sets_scenario.sql    # NOTICE: ok: ... x14
+psql "$DB" -v ON_ERROR_STOP=1 -f supabase/tests/sets_scenario.sql    # NOTICE: ok: ... x13
 ```
 
 (The scenarios create fake users; run them on a fresh database, or skip.)
