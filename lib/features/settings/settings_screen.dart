@@ -1,11 +1,16 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
+
 import 'package:file_selector/file_selector.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/notifications.dart';
 import '../../app/providers.dart';
+import '../../data/db/backup.dart';
 import '../../data/media/web_source.dart';
 import 'import_photos.dart';
 import '../../core/beats/beat.dart';
@@ -207,6 +212,20 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (DbBackup.supported) ...[
+            ListTile(
+              leading: const Icon(Icons.save_alt_rounded),
+              title: const Text('Back up rankings'),
+              subtitle: const Text('Every rating and decision, as one file you keep'),
+              onTap: () => _backup(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_backup_restore_rounded),
+              title: const Text('Restore rankings from backup'),
+              subtitle: const Text('Replaces this device\'s ranking data with a backup file'),
+              onTap: () => _restoreBackup(context, ref),
+            ),
+          ],
           const _Section('Moments'),
           ListTile(
             leading: const Icon(Icons.auto_awesome),
@@ -462,7 +481,7 @@ class _ArenaReminderTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final on = ref.watch(prefProvider(prefArenaReminder)).value == '1';
+    final on = ref.watch(prefProvider(prefArenaReminder)).value != '0';
     final hour = int.tryParse(ref.watch(prefProvider(prefArenaReminderHour)).value ?? '') ?? 18;
     Future<void> apply(bool v, int h) async {
       if (v && !await Notifications.requestPermission()) {
@@ -480,7 +499,7 @@ class _ArenaReminderTile extends ConsumerWidget {
     return SwitchListTile(
       title: const Text('Arena: enter today\'s photo'),
       subtitle: Row(children: [
-        Text(on ? 'Daily at ' : 'A daily nudge; skipped on days you already entered'),
+        Flexible(child: Text(on ? 'Daily at ' : 'A daily nudge; skipped on days you already entered', overflow: TextOverflow.ellipsis, maxLines: 2)),
         if (on)
           InkWell(
             onTap: () async {
@@ -505,7 +524,7 @@ class _NotifyToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final value = ref.watch(prefProvider(prefKey)).value == '1';
+    final value = ref.watch(prefProvider(prefKey)).value != '0';
     return SwitchListTile(
       title: Text(title),
       subtitle: Text(subtitle),
@@ -522,5 +541,59 @@ class _NotifyToggle extends ConsumerWidget {
         ref.invalidate(prefProvider(prefKey));
       },
     );
+  }
+}
+
+Future<void> _backup(BuildContext context, WidgetRef ref) async {
+  try {
+    final file = await DbBackup.snapshot(ref.read(dbProvider));
+    if (!context.mounted) return;
+    if (isDesktop) {
+      final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final dest = File('${dir.path}/${file.uri.pathSegments.last}');
+      await file.copy(dest.path);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved to ${dest.path}')));
+    } else {
+      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'PhotoRank rankings backup'));
+    }
+  } catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Backup failed: $e')));
+  }
+}
+
+Future<void> _restoreBackup(BuildContext context, WidgetRef ref) async {
+  final picked = await openFile(acceptedTypeGroups: const [XTypeGroup(label: 'PhotoRank backup', extensions: ['sqlite'])]);
+  if (picked == null || !context.mounted) return;
+  try {
+    final info = await DbBackup.validate(File(picked.path));
+    if (!context.mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore this backup?'),
+        content: Text(
+            'It holds ${info.photos} photos and ${info.decisions} decisions.\n\nThis replaces ALL ranking data currently on this device. Your arena account is separate and not affected.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Replace and restart')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(dbProvider).close();
+    await DbBackup.replaceLive(File(picked.path));
+    if (context.mounted) {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Restored'),
+          content: const Text('PhotoRank will close now — open it again to continue with the restored rankings.'),
+          actions: [FilledButton(onPressed: () => exit(0), child: const Text('Close app'))],
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'.replaceFirst('Bad state: ', ''))));
   }
 }

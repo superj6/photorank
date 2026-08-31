@@ -310,7 +310,7 @@ class ArenaController extends Notifier<ArenaState> {
 
   Future<void> _skipNudgeToday() async {
     final prefs = ref.read(photoRepoProvider);
-    if (await prefs.pref(prefArenaReminder) != '1') return;
+    if (await prefs.pref(prefArenaReminder) == '0') return;
     final hour = int.tryParse(await prefs.pref(prefArenaReminderHour) ?? '') ?? 18;
     await Notifications.setArenaReminder(true, hour: hour, skipToday: true);
   }

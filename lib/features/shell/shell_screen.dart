@@ -6,7 +6,9 @@ import 'dart:async';
 
 import 'package:home_widget/home_widget.dart';
 
+import '../../app/notifications.dart';
 import '../../app/providers.dart';
+import '../arena/arena_providers.dart';
 import '../../app/theme.dart';
 import '../play/session_controller.dart';
 import '../widget/duel_widget.dart';
@@ -31,6 +33,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _rescan();
       _widgetLaunch();
+      _reminders();
     });
   }
 
@@ -88,6 +91,23 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     (Icons.public_outlined, Icons.public, 'Arena'),
     (Icons.tune, Icons.tune, 'Settings'),
   ];
+
+  /// Reminders are on unless turned off: schedule them every launch so a
+  /// fresh install (or an update) nudges without a trip to Settings. The
+  /// system permission is asked once; declining leaves everything quiet.
+  Future<void> _reminders() async {
+    final prefs = ref.read(photoRepoProvider);
+    if (await prefs.pref('notify_prompted') != '1') {
+      await prefs.setPref('notify_prompted', '1');
+      if (!await Notifications.requestPermission()) return;
+    }
+    if (await prefs.pref('notify_daily') != '0') await Notifications.setDailyReminder(true);
+    if (await prefs.pref('notify_weekly') != '0') await Notifications.setWeeklyRecap(true);
+    if (await prefs.pref(prefArenaReminder) != '0') {
+      final hour = int.tryParse(await prefs.pref(prefArenaReminderHour) ?? '') ?? 18;
+      await Notifications.setArenaReminder(true, hour: hour);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
