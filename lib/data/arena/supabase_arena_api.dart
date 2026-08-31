@@ -33,11 +33,15 @@ class SupabaseArenaApi implements ArenaApi {
     final stored = _client.auth.currentUser;
     if (stored != null) {
       // A stored session can outlive its refresh token (device clock jumps,
-      // a reset dev database). Never silently replace a recoverable account:
-      // the user restores it with their phrase instead.
+      // a reset dev database). Only a definitive rejection (4xx) means the
+      // session is dead — a server restart, 5xx or network error must never
+      // cost anyone their account. Recoverable accounts are never replaced:
+      // the user restores them with their phrase instead.
       try {
         await _client.auth.getUser();
-      } on AuthException {
+      } on AuthException catch (e) {
+        final status = int.tryParse(e.statusCode ?? '');
+        if (status == null || status >= 500) rethrow; // transient: keep the session
         if (_isRecoverable(stored)) throw const SessionExpired(recoverable: true);
         await _client.auth.signOut();
       }

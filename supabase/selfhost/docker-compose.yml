@@ -79,6 +79,9 @@ services:
       GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "false"
       GOTRUE_PASSWORD_MIN_LENGTH: 12
+      # Two app instances (or PWA tabs) may refresh the same token at once;
+      # give the rotation a generous reuse window instead of revoking.
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 60
       GOTRUE_RATE_LIMIT_ANONYMOUS_USERS: 30
       GOTRUE_RATE_LIMIT_TOKEN_REFRESH: 150
       GOTRUE_LOG_LEVEL: warn
