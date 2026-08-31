@@ -129,3 +129,29 @@ Future<void> newRecoveryPhraseFlow(BuildContext context, WidgetRef ref) async {
     if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'.replaceFirst('Bad state: ', ''))));
   }
 }
+
+/// Play-policy required: delete the arena account (and everything uploaded).
+Future<void> deleteAccountFlow(BuildContext context, WidgetRef ref) async {
+  final username = ref.read(arenaProvider).profile?.username;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete arena account?'),
+      content: Text(
+        'This permanently deletes ${username == null ? 'this device\'s arena account' : '@$username'} from the server: uploaded photos, arena entries and finishes, your published set and every friend\'s ranking of it, follows — everything.\n\n'
+        'Your photo ranking on this device is not affected. This cannot be undone, and the recovery phrase stops working.',
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep my account')),
+        FilledButton(style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB3261E), minimumSize: const Size(0, 44)), onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete forever')),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  try {
+    await ref.read(arenaProvider.notifier).deleteAccount();
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Arena account deleted.')));
+  } catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'.replaceFirst('Bad state: ', ''))));
+  }
+}

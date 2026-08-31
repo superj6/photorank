@@ -38,6 +38,10 @@ abstract class ArenaApi {
   /// Replaces the recovery phrase of a recoverable account.
   Future<void> setRecoveryPhrase(String recoveryPhrase);
 
+  /// Permanently deletes the arena account: uploaded photos, entries, sets,
+  /// duels, follows — everything server-side. Local ratings are untouched.
+  Future<void> deleteAccount();
+
   /// null when the name is free, otherwise the profile holding it.
   Future<FriendRow?> findProfile(String username);
   Future<void> registerDeviceToken(String token, {required String platform});

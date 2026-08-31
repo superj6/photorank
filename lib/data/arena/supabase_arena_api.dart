@@ -157,6 +157,16 @@ class SupabaseArenaApi implements ArenaApi {
   Future<void> setRecoveryPhrase(String recoveryPhrase) => _client.auth.updateUser(UserAttributes(password: recoveryPhrase));
 
   @override
+  Future<void> deleteAccount() async {
+    // Files first (only the account itself may delete them), then the row
+    // cascade, then drop the now-dead local session.
+    final paths = [for (final p in await _client.rpc('my_storage_paths') as List) p as String];
+    if (paths.isNotEmpty) await _client.storage.from(ArenaConfig.bucket).remove(paths);
+    await _client.rpc('delete_account');
+    await _client.auth.signOut();
+  }
+
+  @override
   Future<void> registerDeviceToken(String token, {required String platform}) =>
       _client.rpc('register_device_token', params: {'p_token': token, 'p_platform': platform});
 

@@ -22,23 +22,27 @@ favourites float to the top, all on their own.
 • A home-screen widget: today's duel, one tap from the launcher
 • Rank along more than one axis — Love, Funny, Beautiful, your own
 
-Private by design: PhotoRank reads the photos already on your phone and stores
-only ratings, on your device. No account, no upload, no ads, and nothing is
-ever deleted, moved or hidden. The bottom of the ranking is just the bottom.
+Private by design: ranking is fully on-device — PhotoRank reads the photos
+already on your phone and stores only ratings, locally. No ads, and nothing is
+ever deleted, moved or hidden; the bottom of the ranking is just the bottom.
+The online parts are strictly opt-in: enter one photo a day in the global
+Arena, or publish your Top 10 for friends to rank — only the photos you
+choose are uploaded (downsized, location and camera data removed), and you
+can delete them or the whole account any time.
 
 **Category:** Photography
 **Tags:** photos, gallery, organize, ranking, game
 
-**Privacy policy URL:** https://github.com/superj6/photorank/blob/main/docs/PRIVACY.md
+**Privacy policy URL:** https://photorank.jgon.net/privacy.html
 
 ## Data safety form (answers)
-Without Arena enabled in the build: no data collected or shared.
-With Arena (online mode):
+The Play build ships with Arena pointed at https://photorank.jgon.net:
 - Collected: **Photos** (user-initiated, optional — the one daily entry),
   **User IDs** (anonymous account), **App interactions** (duel choices).
   Purpose: app functionality. Not shared with third parties.
 - Encrypted in transit: **Yes** (HTTPS). Users can request deletion: **Yes**
-  (withdraw entries in-app; account deletion on request).
+  (in-app: Settings → Delete arena account).
+- Account deletion URL (required field): https://photorank.jgon.net/delete-account.html
 - Photos and videos on the device are otherwise accessed on-device only.
 
 ## User-generated content (Play policy)
@@ -47,11 +51,19 @@ Arena shows photos uploaded by users. The app has in-app **report** and
 and the consent sheet states the rules and the 13+ requirement.
 
 ## Content rating questionnaire
-- No violence, sexual content, profanity, gambling, or user-generated content
-  shared with others. Expected rating: **Everyone / PEGI 3**.
+- No violence, sexual content, profanity, or gambling.
+- **User-generated content: YES** — Arena entries and published friend sets
+  are user photos shown to others, with in-app report + block and moderation
+  (answer the UGC questions accordingly). Expected rating: **Everyone /
+  PEGI 3**, possibly Teen depending on the UGC branch.
 
 ## App access
 - No login required. All features are available without credentials.
+
+## Photos permission declaration
+- READ_MEDIA_IMAGES is core functionality: the app's purpose is organising /
+  ranking the user's photo library on-device. Declare "photo and video
+  management" as the core use case when the console asks.
 
 ## Assets
 - Icon: `assets/icon/icon.png` (512×512 export for Play)

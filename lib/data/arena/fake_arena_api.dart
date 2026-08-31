@@ -220,6 +220,14 @@ class FakeArenaApi implements ArenaApi {
   }
 
   @override
+  Future<void> deleteAccount() async {
+    _entries.removeWhere((e) => e.userId == 'me');
+    _sets.removeWhere((s) => s.ownerId == 'me');
+    _linked.removeWhere((_, e) => e.$2.id == 'me');
+    _me = null;
+  }
+
+  @override
   Future<void> setRecoveryPhrase(String recoveryPhrase) async {
     final me = _me!;
     if (!me.recoverable) throw StateError('claim a username first');

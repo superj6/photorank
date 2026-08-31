@@ -277,6 +277,19 @@ class ArenaController extends Notifier<ArenaState> {
     await load();
   }
 
+  /// Deletes the server-side account and resets Arena state; the next open
+  /// starts a fresh anonymous account. Local photo ratings are untouched.
+  Future<void> deleteAccount() async {
+    final api = await _api;
+    if (api == null) throw StateError('Arena is not available in this build.');
+    try {
+      await api.deleteAccount();
+    } catch (e) {
+      throw StateError(_msg(e));
+    }
+    state = const ArenaState();
+  }
+
   Future<String> newRecoveryPhrase() async {
     final api = await _api;
     if (api == null) throw StateError('Arena is not available in this build.');

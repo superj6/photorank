@@ -100,8 +100,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   icon: Icons.style_rounded,
                   title: 'PhotoRank',
                   body: 'A tiny game that sorts your camera roll.\n\n'
-                      'Every swipe makes your favourites clearer. Nothing is ever deleted, hidden, or uploaded — '
-                      'your photos never leave this phone.',
+                      'Every swipe makes your favourites clearer. Nothing is ever deleted or hidden, and ranking is '
+                      'fully on-device — a photo only ever leaves this phone if you choose to enter it in the online Arena '
+                      'or publish it for friends.',
                   action: 'Let\'s go',
                   onAction: () => setState(() => _step = 1),
                 ),

@@ -446,6 +446,13 @@ class _ArenaProfileTile extends ConsumerWidget {
         subtitle: const Text('Sign this device into an account with its username and recovery phrase'),
         onTap: () => restoreAccountFlow(context, ref),
       ),
+      if (s.profile != null)
+        ListTile(
+          leading: const Icon(Icons.delete_forever_outlined),
+          title: const Text('Delete arena account'),
+          subtitle: const Text('Removes everything uploaded and the account itself'),
+          onTap: () => deleteAccountFlow(context, ref),
+        ),
     ]);
   }
 }
