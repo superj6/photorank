@@ -35,7 +35,7 @@ class FakeArenaApi implements ArenaApi {
 
   @override
   Future<void> submit(Uint8List jpegBytes, {required DateTime takenAt, String? roomId}) async {
-    if (DateTime.now().difference(takenAt) > const Duration(hours: 36)) throw StateError('photo must be taken today');
+    if (DateTime.now().difference(takenAt) > const Duration(hours: 26)) throw StateError('photo must be taken today (Pacific time)');
     if (_entries.any((e) => e.userId == 'me' && e.roomId == roomId && e.status == 'active')) throw StateError('already submitted today');
     _entries.add(_E(id: 'me-${roomId ?? 'g'}', userId: 'me', path: 'me/today.jpg', roomId: roomId));
   }

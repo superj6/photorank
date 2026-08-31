@@ -7,6 +7,8 @@ import '../../app/providers.dart';
 import '../../app/push.dart';
 import '../../config/arena_config.dart';
 import '../../core/recovery/recovery_phrase.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 import '../../data/arena/arena_api.dart';
 import '../../data/arena/arena_models.dart';
 import '../../data/arena/fake_arena_api.dart';
@@ -174,7 +176,7 @@ class ArenaController extends Notifier<ArenaState> {
       final row = await ref.read(photoRepoProvider).byId(photoId);
       final takenAt = row?.takenAt;
       if (row == null || takenAt == null) throw StateError('That photo has no capture date.');
-      if (!isFromToday(takenAt)) throw StateError('Only a photo taken today can enter.');
+      if (!isFromToday(takenAt)) throw StateError('Only a photo taken today (Pacific time) can enter.');
       final bytes = await ref.read(photoSourceProvider).originalBytes(row.mediaId);
       if (bytes == null) throw StateError('Could not read that photo.');
       final prepared = await compute(_prepare, bytes);
@@ -326,10 +328,18 @@ class ArenaController extends Notifier<ArenaState> {
 
 PreparedUpload? _prepare(Uint8List bytes) => prepareUpload(bytes);
 
-/// "Today" in the user's local calendar (the server allows 36 h of slack).
+var _tzReady = false;
+
+/// "Today" by the arena's clock: the current US Pacific day (the server
+/// enforces the same boundary with 2 h of skew slack).
 bool isFromToday(DateTime takenAt, {DateTime? now}) {
-  final n = now ?? DateTime.now();
-  final t = takenAt.toLocal();
+  if (!_tzReady) {
+    tzdata.initializeTimeZones();
+    _tzReady = true;
+  }
+  final la = tz.getLocation('America/Los_Angeles');
+  final n = tz.TZDateTime.from(now ?? DateTime.now(), la);
+  final t = tz.TZDateTime.from(takenAt, la);
   return t.year == n.year && t.month == n.month && t.day == n.day;
 }
 

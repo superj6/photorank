@@ -238,7 +238,7 @@ class _SubmitCard extends StatelessWidget {
         const SizedBox(height: 4),
         const Text('Your best photo', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
-        const Text('One photo per day, taken today. After you enter you rate a set of other people\'s photos — and only then does today\'s board open. Yesterday\'s boards are final and public.', style: TextStyle(color: Colors.white70)),
+        const Text('One photo per day, taken that day — days follow Pacific time. After you enter you rate a set of other people\'s photos — and only then does today\'s board open. Yesterday\'s boards are final and public.', style: TextStyle(color: Colors.white70)),
         const SizedBox(height: 14),
         FilledButton.icon(onPressed: state.busy ? null : onSubmit, icon: const Icon(Icons.upload_rounded), label: Text(state.busy ? 'Uploading…' : 'Enter a photo')),
       ]),
