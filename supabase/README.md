@@ -33,7 +33,7 @@ user over the REST API: `new ana`, `follow <your-username>`, `publish <dir> 6`,
 `rank <your-username>` — then refresh the Friends screen in the app.
 
 ## Result pushes ("Your photo finished #12")
-1. Create a Firebase project, add the Android app (`dev.photorank.photorank`),
+1. Create a Firebase project, add the Android app (`net.jgon.photorank`),
    and download a **service account** JSON (Project settings → Service accounts).
 2. `supabase secrets set FCM_SERVICE_ACCOUNT="$(cat service-account.json)"`
    then `supabase functions deploy send-push`.

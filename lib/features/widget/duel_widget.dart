@@ -44,7 +44,7 @@ class DuelWidget {
       await HomeWidget.saveWidgetData<String>('duel_b_id', '${ids[1]}');
       await HomeWidget.saveWidgetData<String>('duel_a_path', paths[0]);
       await HomeWidget.saveWidgetData<String>('duel_b_path', paths[1]);
-      await HomeWidget.updateWidget(androidName: androidName, qualifiedAndroidName: 'dev.photorank.photorank.$androidName');
+      await HomeWidget.updateWidget(androidName: androidName, qualifiedAndroidName: 'net.jgon.photorank.$androidName');
     } catch (e) {
       debugPrint('widget refresh failed: $e');
     }

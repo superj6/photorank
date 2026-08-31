@@ -1,4 +1,4 @@
-package dev.photorank.photorank
+package net.jgon.photorank
 
 import android.appwidget.AppWidgetManager
 import android.content.Context

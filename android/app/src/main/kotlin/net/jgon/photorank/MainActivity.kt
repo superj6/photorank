@@ -1,4 +1,4 @@
-package dev.photorank.photorank
+package net.jgon.photorank
 
 import io.flutter.embedding.android.FlutterActivity
 

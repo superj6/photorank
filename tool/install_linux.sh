@@ -20,7 +20,7 @@ Exec=$DEST/photorank
 Icon=photorank
 Terminal=false
 Categories=Graphics;Photography;
-StartupWMClass=dev.photorank.photorank
+StartupWMClass=net.jgon.photorank
 DESKTOP
 update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
 
